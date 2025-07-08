@@ -2,6 +2,7 @@ from aiogram import F, Router, Bot
 from aiogram.types import Message, CallbackQuery
 from aiogram.fsm.state import StatesGroup, State
 from aiogram.fsm.context import FSMContext
+import logging
 
 import database.requests as rq
 
@@ -18,51 +19,94 @@ class AddGaid(StatesGroup):
 
 @router.callback_query(F.data.startswith('keyboardaddgaid'))
 async def addpole(callback: CallbackQuery, state: FSMContext, bot: Bot):
-    chat_id = callback.from_user.id
-    last_message_id = callback.message.message_id
-    await callback.answer()
-    await callback.message.edit_reply_markup(reply_markup=None)
-    await bot.delete_message(chat_id=chat_id, message_id=last_message_id)
-    await state.set_state(AddGaid.namefail)
-    await callback.message.answer('Введите название файла: ')
+    try:
+        chat_id = callback.from_user.id
+        last_message_id = callback.message.message_id
+        await callback.answer()
+        await callback.message.edit_reply_markup(reply_markup=None)
+        await bot.delete_message(chat_id=chat_id, message_id=last_message_id)
+        await state.set_state(AddGaid.namefail)
+        await callback.message.answer('Введите название файла: ')
+    except Exception as e:
+        logging.error(f"Error in addpole: {e}")
+        await callback.message.answer("Произошла ошибка. Пожалуйста, попробуйте снова.")
 
 
 @router.message(AddGaid.namefail)
 async def addnamefail(message: Message, state: FSMContext, bot: Bot):
-    await state.update_data(namefail=message.text)
-    await state.set_state(AddGaid.descriptiongaid)
-    await bot.send_message(message.from_user.id,'Введите описание: ')
+    try:
+        if not message.text:
+            await message.answer("Пожалуйста, введите название файла.")
+            return
+        await state.update_data(namefail=message.text)
+        await state.set_state(AddGaid.descriptiongaid)
+        await bot.send_message(message.from_user.id, 'Введите описание: ')
+    except Exception as e:
+        logging.error(f"Error in addnamefail: {e}")
+        await message.answer("Ошибка при обработке названия. Попробуйте еще раз.")
 
 
 @router.message(AddGaid.descriptiongaid)
 async def adddescriptiongaid(message: Message, state: FSMContext, bot: Bot):
-    await state.update_data(descriptiongaid=message.text)
-    await state.set_state(AddGaid.fail)
-    await bot.send_message(message.from_user.id,'Зарузите файл: ')
+    try:
+        if not message.text:
+            await message.answer("Пожалуйста, введите описание.")
+            return
+        await state.update_data(descriptiongaid=message.text)
+        await state.set_state(AddGaid.fail)
+        await bot.send_message(message.from_user.id, 'Загрузите файл: ')
+    except Exception as e:
+        logging.error(f"Error in adddescriptiongaid: {e}")
+        await message.answer("Ошибка при обработке описания. Попробуйте еще раз.")
 
 
 @router.message(AddGaid.fail)
 async def addfail(message: Message, state: FSMContext, bot: Bot):
-    await state.update_data(fail=message.document.file_id)
-    await state.set_state(AddGaid.pricecardgaid)
-    await bot.send_message(message.from_user.id,'Укажите цену гайда в рублях: ')
+    try:
+        if not message.document:
+            await message.answer("Пожалуйста, загрузите файл как документ.")
+            return
+        await state.update_data(fail=message.document.file_id)
+        await state.set_state(AddGaid.pricecardgaid)
+        await bot.send_message(message.from_user.id, 'Укажите цену гайда в рублях: ')
+    except Exception as e:
+        logging.error(f"Error in addfail: {e}")
+        await message.answer("Ошибка при загрузке файла. Пожалуйста, попробуйте еще раз.")
 
 
 @router.message(AddGaid.pricecardgaid)
 async def addpricecardgaid(message: Message, state: FSMContext, bot: Bot):
-    await state.update_data(pricecardgaid=message.text)
-    await state.set_state(AddGaid.pricestargaid)
-    await bot.send_message(message.from_user.id,'Укажите цену гайда в звездах: ')
+    try:
+        if not message.text or not message.text.isdigit():
+            await message.answer("Пожалуйста, укажите корректную цену в рублях (только цифры).")
+            return
+        await state.update_data(pricecardgaid=message.text)
+        await state.set_state(AddGaid.pricestargaid)
+        await bot.send_message(message.from_user.id, 'Укажите цену гайда в звездах: ')
+    except Exception as e:
+        logging.error(f"Error in addpricecardgaid: {e}")
+        await message.answer("Ошибка при обработке цены. Попробуйте еще раз.")
+
 
 @router.message(AddGaid.pricestargaid)
 async def addpricestargaid(message: Message, state: FSMContext, bot: Bot):
-    await state.update_data(pricestargaid=message.text)
-    addata = await state.get_data()
-    namefail = addata.get('namefail')
-    descriptiongaid = addata.get('descriptiongaid')
-    fail = addata.get('fail')
-    pricecardgaid = addata.get('pricecardgaid')
-    pricestargaid = addata.get('pricestargaid')
-    await rq.addgaid(namefail, descriptiongaid, fail, pricecardgaid, pricestargaid)
-    await bot.send_message(message.from_user.id,'Данные добавлены успешно!')
-    await state.clear()
+    try:
+        if not message.text or not message.text.isdigit():
+            await message.answer("Пожалуйста, укажите корректную цену в звездах (только цифры).")
+            return
+        
+        await state.update_data(pricestargaid=message.text)
+        addata = await state.get_data()
+        namefail = addata.get('namefail')
+        descriptiongaid = addata.get('descriptiongaid')
+        fail = addata.get('fail')
+        pricecardgaid = addata.get('pricecardgaid')
+        pricestargaid = addata.get('pricestargaid')
+        
+        await rq.addgaid(namefail, descriptiongaid, fail, pricecardgaid, pricestargaid)
+        await bot.send_message(message.from_user.id, 'Данные добавлены успешно!')
+        await state.clear()
+    except Exception as e:
+        logging.error(f"Error in addpricestargaid: {e}")
+        await message.answer("Ошибка при сохранении данных. Пожалуйста, попробуйте снова.")
+        await state.clear()
