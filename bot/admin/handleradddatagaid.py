@@ -63,17 +63,46 @@ async def adddescriptiongaid(message: Message, state: FSMContext, bot: Bot):
 @router.message(AddGaid.fail)
 async def addfail(message: Message, state: FSMContext, bot: Bot):
     try:
-        if message.document is None:
-            await message.answer("Пожалуйста, отправьте файл как документ (не как фото или другой тип медиа).")
-            return  # Остаемся в том же состоянии, чтобы пользователь мог отправить файл снова
+        # Проверяем, что сообщение содержит документ
+        if not message.document:
+            await message.answer("❌ Пожалуйста, отправьте файл как документ")
+            return  # Остаемся в текущем состоянии
         
-        file_id = message.document.file_id
-        await state.update_data(fail=file_id)
+        # Получаем информацию о файле
+        file_info = {
+            'file_id': message.document.file_id,
+            'file_name': message.document.file_name,
+            'mime_type': message.document.mime_type,
+            'file_size': message.document.file_size
+        }
+        
+        # Дополнительная проверка типа файла (пример для PDF)
+        if not message.document.mime_type.endswith(('pdf', 'vnd.openxmlformats-officedocument')):
+            await message.answer("⚠️ Принимаются только PDF или Word документы. Пожалуйста, отправьте файл в правильном формате.")
+            return
+            
+        # Проверка размера файла (например, не более 20MB)
+        if message.document.file_size > 20 * 1024 * 1024:
+            await message.answer("⚠️ Файл слишком большой. Максимальный размер - 20MB.")
+            return
+            
+        # Сохраняем file_id в состояние
+        await state.update_data(fail=file_info)
+        
+        # Переходим к следующему шагу
         await state.set_state(AddGaid.pricecardgaid)
-        await bot.send_message(message.from_user.id, 'Укажите цену гайда в рублях: ')
+        await bot.send_message(
+            message.from_user.id,
+            '✅ Файл успешно принят!\n'
+            'Укажите цену гайда в рублях:'
+        )
+        
+    except AttributeError as e:
+        logging.error(f"Document processing error: {str(e)}")
+        await message.answer("❌ Ошибка при обработке файла. Пожалуйста, попробуйте отправить файл еще раз.")
     except Exception as e:
-        logging.error(f"Error in addfail: {str(e)}")
-        await message.answer("Произошла ошибка при обработке файла. Пожалуйста, попробуйте отправить файл еще раз.")
+        logging.error(f"Unexpected error in addfail: {str(e)}")
+        await message.answer("⚠️ Произошла непредвиденная ошибка. Пожалуйста, попробуйте позже.")
 
 
 @router.message(AddGaid.pricecardgaid)
