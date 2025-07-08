@@ -60,44 +60,65 @@ async def adddescriptiongaid(message: Message, state: FSMContext, bot: Bot):
         await message.answer("Ошибка при обработке описания. Попробуйте еще раз.")
 
 
-@router.message(AddGaid.fail)
+@router.message(AddGaid.fail, ~F.document)
+async def handle_wrong_content_type(message: Message):
+    await message.answer(
+        "⚠️ Пожалуйста, отправьте файл как документ через меню \"Прикрепить файл\".\n"
+        "Если вы отправили файл, но видите это сообщение, попробуйте:\n"
+        "1. Нажать на скрепку в поле ввода\n"
+        "2. Выбрать \"Документ\"\n"
+        "3. Выбрать нужный файл"
+    )
+
+# Основной обработчик документа
+@router.message(AddGaid.fail, F.document)
 async def addfail(message: Message, state: FSMContext, bot: Bot):
     try:
-        if not message.document:
-            await message.answer("❌ Пожалуйста, отправьте файл как документ")
-            return  
+        document = message.document
         
+        # Проверка типа файла
+        allowed_types = [
+            'application/pdf',
+            'application/vnd.openxmlformats-officedocument',
+            'application/msword',
+            'text/plain'
+        ]
+        
+        if not any(document.mime_type.startswith(t) for t in allowed_types):
+            await message.answer(
+                "❌ Неподдерживаемый формат файла.\n"
+                "Поддерживаются: PDF, Word (docx/doc), текстовые файлы."
+            )
+            return
+        
+        # Проверка размера файла (20MB максимум)
+        if document.file_size > 20 * 1024 * 1024:
+            await message.answer("❌ Файл слишком большой. Максимальный размер - 20MB.")
+            return
+        
+        # Сохраняем информацию о файле
         file_info = {
-            'file_id': message.document.file_id,
-            'file_name': message.document.file_name,
-            'mime_type': message.document.mime_type,
-            'file_size': message.document.file_size
+            'file_id': document.file_id,
+            'file_name': document.file_name,
+            'file_size': document.file_size,
+            'mime_type': document.mime_type
         }
-
-        if not message.document.mime_type.endswith(('pdf', 'vnd.openxmlformats-officedocument')):
-            await message.answer("⚠️ Принимаются только PDF или Word документы. Пожалуйста, отправьте файл в правильном формате.")
-            return
-
-        if message.document.file_size > 20 * 1024 * 1024:
-            await message.answer("⚠️ Файл слишком большой. Максимальный размер - 20MB.")
-            return
-
+        
         await state.update_data(fail=file_info)
-
-
         await state.set_state(AddGaid.pricecardgaid)
-        await bot.send_message(
-            message.from_user.id,
-            '✅ Файл успешно принят!\n'
-            'Укажите цену гайда в рублях:'
+        await message.answer(
+            f"✅ Файл \"{document.file_name}\" успешно загружен!\n"
+            "Теперь укажите цену гайда в рублях:"
         )
         
-    except AttributeError as e:
-        logging.error(f"Document processing error: {str(e)}")
-        await message.answer("❌ Ошибка при обработке файла. Пожалуйста, попробуйте отправить файл еще раз.")
     except Exception as e:
-        logging.error(f"Unexpected error in addfail: {str(e)}")
-        await message.answer("⚠️ Произошла непредвиденная ошибка. Пожалуйста, попробуйте позже.")
+        logging.error(f"Error processing document: {str(e)}", exc_info=True)
+        await message.answer(
+            "⚠️ Произошла ошибка при обработке файла. Пожалуйста:\n"
+            "1. Проверьте, что файл не поврежден\n"
+            "2. Попробуйте отправить его еще раз\n"
+            "3. Если ошибка повторяется, попробуйте другой файл"
+        )
 
 
 @router.message(AddGaid.pricecardgaid)
