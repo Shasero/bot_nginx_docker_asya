@@ -63,15 +63,17 @@ async def adddescriptiongaid(message: Message, state: FSMContext, bot: Bot):
 @router.message(AddGaid.fail)
 async def addfail(message: Message, state: FSMContext, bot: Bot):
     try:
-        if not message.document:
-            await message.answer("Пожалуйста, загрузите файл как документ.")
-            return
-        await state.update_data(fail=message.document.file_id)
+        if message.document is None:
+            await message.answer("Пожалуйста, отправьте файл как документ (не как фото или другой тип медиа).")
+            return  # Остаемся в том же состоянии, чтобы пользователь мог отправить файл снова
+        
+        file_id = message.document.file_id
+        await state.update_data(fail=file_id)
         await state.set_state(AddGaid.pricecardgaid)
         await bot.send_message(message.from_user.id, 'Укажите цену гайда в рублях: ')
     except Exception as e:
-        logging.error(f"Error in addfail: {e}")
-        await message.answer("Ошибка при загрузке файла. Пожалуйста, попробуйте еще раз.")
+        logging.error(f"Error in addfail: {str(e)}")
+        await message.answer("Произошла ошибка при обработке файла. Пожалуйста, попробуйте отправить файл еще раз.")
 
 
 @router.message(AddGaid.pricecardgaid)
