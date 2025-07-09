@@ -28,7 +28,7 @@ async def addpoleurl(callback: CallbackQuery, state: FSMContext, bot: Bot):
         await state.set_state(AddKurs.nameurl)
         await callback.message.answer('Введите название курса: ')
     except Exception as e:
-        logging.error(f"Error in addpoleurl: {e}")
+        logging.error(f"Ошибка в addpoleurl: {e}")
         await callback.message.answer("Произошла ошибка. Пожалуйста, попробуйте снова.")
 
 
@@ -42,7 +42,7 @@ async def addnameurl(message: Message, state: FSMContext, bot: Bot):
         await state.set_state(AddKurs.descriptionkurs)
         await bot.send_message(message.from_user.id, 'Введите описание: ')
     except Exception as e:
-        logging.error(f"Error in addnameurl: {e}")
+        logging.error(f"Ошибка в URL-адресе добавления имени: {e}")
         await message.answer("Ошибка при обработке названия. Попробуйте еще раз.")
 
 
@@ -56,7 +56,7 @@ async def adddescriptionkurs(message: Message, state: FSMContext, bot: Bot):
         await state.set_state(AddKurs.url)
         await bot.send_message(message.from_user.id, 'Вставьте ссылку на курс: ')
     except Exception as e:
-        logging.error(f"Error in adddescriptionkurs: {e}")
+        logging.error(f"Ошибка в adddescription kurs: {e}")
         await message.answer("Ошибка при обработке описания. Попробуйте еще раз.")
 
 
@@ -70,7 +70,7 @@ async def addurl(message: Message, state: FSMContext, bot: Bot):
         await state.set_state(AddKurs.pricecardkurs)
         await bot.send_message(message.from_user.id, 'Укажите цену курса в рублях: ')
     except Exception as e:
-        logging.error(f"Error in addurl: {e}")
+        logging.error(f"Ошибка при добавлении URL-адреса: {e}")
         await message.answer("Ошибка при обработке ссылки. Попробуйте еще раз.")
 
 
@@ -84,7 +84,7 @@ async def addpricecardkurs(message: Message, state: FSMContext, bot: Bot):
         await state.set_state(AddKurs.pricestarkurs)
         await bot.send_message(message.from_user.id, 'Укажите цену курса в звездах: ')
     except Exception as e:
-        logging.error(f"Error in addpricecardkurs: {e}")
+        logging.error(f"Ошибка в addpricecardkurs: {e}")
         await message.answer("Ошибка при обработке цены. Попробуйте еще раз.")
 
 
@@ -107,6 +107,6 @@ async def addpricestarkurs(message: Message, state: FSMContext, bot: Bot):
         await bot.send_message(message.from_user.id, 'Данные добавлены успешно!')
         await state.clear()
     except Exception as e:
-        logging.error(f"Error in addpricestarkurs: {e}")
+        logging.error(f"Ошибка в addpricestarkurs: {e}")
         await message.answer("Ошибка при сохранении данных. Пожалуйста, попробуйте снова.")
         await state.clear()

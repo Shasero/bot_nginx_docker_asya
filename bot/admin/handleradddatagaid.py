@@ -64,18 +64,17 @@ async def adddescriptiongaid(message: Message, state: FSMContext, bot: Bot):
 @router.message(AddGaid.fail, ~F.document)
 async def handle_wrong_content_type(message: Message):
     await message.answer(
-        "⚠️ Пожалуйста, отправьте файл как документ через меню \"Прикрепить файл\".\n"
+        "⚠️ Пожалуйста, отправьте файл как документ"
         "Если вы отправили файл, но видите это сообщение, попробуйте:\n"
         "1. Нажать на скрепку в поле ввода\n"
         "2. Выбрать \"Документ\"\n"
         "3. Выбрать нужный файл"
     )
 
-# Основной обработчик документа
+
 @router.message(AddGaid.fail)
 async def addfail(message: Message, state: FSMContext, bot: Bot):
     try:
-        # Полная проверка документа
         if not hasattr(message, 'document') or message.document is None:
             await message.answer(
                 "📎 Пожалуйста, отправьте файл через меню \"Прикрепить\" -> \"Документ\"\n"
@@ -87,12 +86,10 @@ async def addfail(message: Message, state: FSMContext, bot: Bot):
         document = message.document
         required_attrs = ['file_id', 'file_name', 'mime_type', 'file_size']
         
-        # Проверка наличия всех необходимых атрибутов
         if not all(hasattr(document, attr) for attr in required_attrs):
             await message.answer("⚠️ Не удалось получить полную информацию о файле. Попробуйте другой файл.")
             return
 
-        # Проверка типа файла с защитой от None
         allowed_types = [
             'application/pdf',
             'application/vnd.openxmlformats-officedocument',
@@ -108,8 +105,7 @@ async def addfail(message: Message, state: FSMContext, bot: Bot):
             )
             return
         
-        # Проверка размера файла
-        max_size = 20 * 1024 * 1024  # 20MB
+        max_size = 20 * 1024 * 1024
         if not document.file_size or document.file_size > max_size:
             await message.answer(
                 f"❌ Файл слишком большой. Размер: {document.file_size or 'неизвестный'} байт\n"
@@ -117,7 +113,6 @@ async def addfail(message: Message, state: FSMContext, bot: Bot):
             )
             return
         
-        # Сохраняем информацию о файле
         file_info = {
             'file_id': document.file_id,
             'file_name': document.file_name,
@@ -159,7 +154,7 @@ async def addpricecardgaid(message: Message, state: FSMContext, bot: Bot):
         await state.set_state(AddGaid.pricestargaid)
         await bot.send_message(message.from_user.id, 'Укажите цену гайда в звездах: ')
     except Exception as e:
-        logging.error(f"Error in addpricecardgaid: {e}")
+        logging.error(f"Ошибка в addpricecardgaid: {e}")
         await message.answer("Ошибка при обработке цены. Попробуйте еще раз.")
 
 
@@ -170,14 +165,11 @@ async def addpricestargaid(message: Message, state: FSMContext, bot: Bot):
             await message.answer("Пожалуйста, укажите корректную цену в звездах (только цифры).")
             return
         
-        # Получаем данные из состояния
         addata = await state.get_data()
         
-        # Преобразуем информацию о файле для сохранения в БД
         file_info = addata.get('fail', {})
         file_id = file_info.get('file_id', '')
         
-        # Проверяем обязательные поля
         if not all([
             addata.get('namefail'),
             addata.get('descriptiongaid'),
@@ -189,11 +181,10 @@ async def addpricestargaid(message: Message, state: FSMContext, bot: Bot):
             await state.clear()
             return
         
-        # Сохраняем в БД только file_id, а не весь словарь
         await rq.addgaid(
             namefail=addata['namefail'],
             descriptiongaid=addata['descriptiongaid'],
-            fail=file_id,  # Только file_id, а не весь словарь
+            fail=file_id,
             pricecardgaid=addata['pricecardgaid'],
             pricestargaid=message.text
         )
@@ -202,10 +193,10 @@ async def addpricestargaid(message: Message, state: FSMContext, bot: Bot):
         await state.clear()
         
     except sqlite3.ProgrammingError as e:
-        logging.error(f"Database error in addpricestargaid: {e}")
+        logging.error(f"Ошибка базы данных в addpricestargaid: {e}")
         await message.answer("Ошибка при сохранении в базу данных. Пожалуйста, попробуйте снова.")
         await state.clear()
     except Exception as e:
-        logging.error(f"Unexpected error in addpricestargaid: {e}")
+        logging.error(f"Непредвиденная ошибка в addpricestargaid: {e}")
         await message.answer("Произошла непредвиденная ошибка. Пожалуйста, попробуйте позже.")
         await state.clear()
