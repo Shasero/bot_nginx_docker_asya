@@ -3,6 +3,7 @@ from aiogram.types import Message, CallbackQuery
 from aiogram.fsm.state import StatesGroup, State
 from aiogram.fsm.context import FSMContext
 import logging
+import sqlite3
 
 import database.requests as rq
 
@@ -169,18 +170,42 @@ async def addpricestargaid(message: Message, state: FSMContext, bot: Bot):
             await message.answer("Пожалуйста, укажите корректную цену в звездах (только цифры).")
             return
         
-        await state.update_data(pricestargaid=message.text)
+        # Получаем данные из состояния
         addata = await state.get_data()
-        namefail = addata.get('namefail')
-        descriptiongaid = addata.get('descriptiongaid')
-        fail = addata.get('fail')
-        pricecardgaid = addata.get('pricecardgaid')
-        pricestargaid = addata.get('pricestargaid')
         
-        await rq.addgaid(namefail, descriptiongaid, fail, pricecardgaid, pricestargaid)
-        await bot.send_message(message.from_user.id, 'Данные добавлены успешно!')
+        # Преобразуем информацию о файле для сохранения в БД
+        file_info = addata.get('fail', {})
+        file_id = file_info.get('file_id', '')
+        
+        # Проверяем обязательные поля
+        if not all([
+            addata.get('namefail'),
+            addata.get('descriptiongaid'),
+            file_id,
+            addata.get('pricecardgaid'),
+            message.text
+        ]):
+            await message.answer("Ошибка: отсутствуют необходимые данные. Пожалуйста, начните заново.")
+            await state.clear()
+            return
+        
+        # Сохраняем в БД только file_id, а не весь словарь
+        await rq.addgaid(
+            namefail=addata['namefail'],
+            descriptiongaid=addata['descriptiongaid'],
+            fail=file_id,  # Только file_id, а не весь словарь
+            pricecardgaid=addata['pricecardgaid'],
+            pricestargaid=message.text
+        )
+        
+        await message.answer("✅ Данные успешно добавлены!")
+        await state.clear()
+        
+    except sqlite3.ProgrammingError as e:
+        logging.error(f"Database error in addpricestargaid: {e}")
+        await message.answer("Ошибка при сохранении в базу данных. Пожалуйста, попробуйте снова.")
         await state.clear()
     except Exception as e:
-        logging.error(f"Error in addpricestargaid: {e}")
-        await message.answer("Ошибка при сохранении данных. Пожалуйста, попробуйте снова.")
+        logging.error(f"Unexpected error in addpricestargaid: {e}")
+        await message.answer("Произошла непредвиденная ошибка. Пожалуйста, попробуйте позже.")
         await state.clear()
