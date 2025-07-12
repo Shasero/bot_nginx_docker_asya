@@ -37,8 +37,8 @@ async def addpole(callback: CallbackQuery, state: FSMContext, bot: Bot):
 @router.message(AddGaid.namefail)
 async def addphoto(message: Message, state: FSMContext, bot: Bot):
     try:
-        if not message.text:
-            await message.answer("Пожалуйста, введите название файла.")
+        if not message.photo:
+            await message.answer("Пожалуйста, добавьте фото.")
             return
         await state.update_data(namefail=message.text)
         await state.set_state(AddGaid.photo)
@@ -51,7 +51,6 @@ async def addphoto(message: Message, state: FSMContext, bot: Bot):
 @router.message(AddGaid.photo)
 async def addnamefail(message: Message, state: FSMContext, bot: Bot):
     try:
-<<<<<<< HEAD
         if not message.text:
             await message.answer("Пожалуйста, добавьте фото.")
             return
@@ -62,12 +61,6 @@ async def addnamefail(message: Message, state: FSMContext, bot: Bot):
             photo_id = message.photo[0].file_id
 
         await state.update_data(photo=photo_id)
-=======
-        if not message.photo:
-            await message.answer("Пожалуйста, добавьте фото.")
-            return
-        await state.update_data(photo=message.photo)
->>>>>>> 3b9ff577c7fa79e31b254ed6246890dadd0f7ecb
         await state.set_state(AddGaid.descriptiongaid)
         await bot.send_message(message.from_user.id, 'Введите описание: ')
     except Exception as e:
