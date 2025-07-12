@@ -35,37 +35,33 @@ async def addpole(callback: CallbackQuery, state: FSMContext, bot: Bot):
 
 
 @router.message(AddGaid.namefail)
-async def addphoto(message: Message, state: FSMContext, bot: Bot):
+async def addnamefail(message: Message, state: FSMContext, bot: Bot):
     try:
         if not message.text:
-            await message.answer("Пожалуйста, добавьте навзание файла.")
+            await message.answer("Пожалуйста, введите название файла.")
             return
         await state.update_data(namefail=message.text)
         await state.set_state(AddGaid.photo)
-        await bot.send_message(message.from_user.id, 'Теперь отправьте фото для гайда: ')
+        await message.answer("Теперь отправьте фото для гайда:")
     except Exception as e:
-        logging.error(f"Error in photo: {e}")
-        await message.answer("Ошибка при обработке фото. Попробуйте еще раз.")
+        logging.error(f"Error in addnamefail: {e}")
+        await message.answer("Ошибка при обработке названия. Попробуйте ещё раз.")
 
 
 @router.message(AddGaid.photo)
-async def addnamefail(message: Message, state: FSMContext, bot: Bot):
+async def addphoto(message: Message, state: FSMContext, bot: Bot):
     try:
         if not message.photo:
-            await message.answer("Пожалуйста, добавьте фото.")
+            await message.answer("Пожалуйста, отправьте фото.")
             return
         
-        if len(message.photo) > 1:
-            photo_id = message.photo[-1].file_id  # Берем самое высокое качество
-        else:
-            photo_id = message.photo[0].file_id
-
+        photo_id = message.photo[-1].file_id  # Берём фото наивысшего качества
         await state.update_data(photo=photo_id)
         await state.set_state(AddGaid.descriptiongaid)
-        await bot.send_message(message.from_user.id, 'Введите описание: ')
+        await message.answer("Фото сохранено! Теперь введите описание:")
     except Exception as e:
-        logging.error(f"Error in addnamefail: {e}")
-        await message.answer("Ошибка при обработке описания. Попробуйте еще раз.")
+        logging.error(f"Error in addphoto: {e}", exc_info=True)
+        await message.answer("Ошибка при обработке фото. Попробуйте ещё раз.")
 
 
 @router.message(AddGaid.descriptiongaid)
@@ -182,37 +178,49 @@ async def addpricecardgaid(message: Message, state: FSMContext, bot: Bot):
 @router.message(AddGaid.pricestargaid)
 async def addpricestargaid(message: Message, state: FSMContext, bot: Bot):
     try:
+        # Проверка ввода цены
         if not message.text or not message.text.isdigit():
-            await message.answer("Пожалуйста, укажите корректную цену в звездах (только цифры).")
+            await message.answer("Пожалуйста, укажите корректную цену в звёздах (только цифры).")
             return
         
-        addata = await state.get_data()
+        data = await state.get_data()
         
-        file_info = addata.get('fail', {})
-        file_id = file_info.get('file_id', '')
+        # Детальная проверка всех полей с логированием
+        required_fields = {
+            'namefail': "Название гайда",
+            'photo': "Фото гайда",
+            'descriptiongaid': "Описание гайда",
+            'fail': "Файл гайда",
+            'pricecardgaid': "Цена в рублях"
+        }
         
-        if not all([
-            addata.get('namefail'),
-            addata.get('photo'),
-            addata.get('descriptiongaid'),
-            file_id,
-            addata.get('pricecardgaid'),
-            message.text
-        ]):
-            await message.answer("Ошибка: отсутствуют необходимые данные. Пожалуйста, начните заново.")
+        missing_fields = []
+        for field, name in required_fields.items():
+            if field not in data or not data[field]:
+                missing_fields.append(name)
+        
+        if missing_fields:
+            error_msg = "Отсутствуют обязательные данные:\n- " + "\n- ".join(missing_fields)
+            logging.error(f"Missing data in state: {missing_fields}")
+            await message.answer(f"❌ {error_msg}\nПожалуйста, начните процесс заново.")
             await state.clear()
             return
         
+        # Получаем file_id из словаря или как строку
+        file_info = data.get('fail', {})
+        file_id = file_info.get('file_id') if isinstance(file_info, dict) else file_info
+        
+        # Сохранение в базу
         await rq.addgaid(
-            namefail=addata['namefail'],
-            photo=addata['photo'],
-            descriptiongaid=addata['descriptiongaid'],
+            namefail=data['namefail'],
+            photo=data['photo'],
+            descriptiongaid=data['descriptiongaid'],
             fail=file_id,
-            pricecardgaid=addata['pricecardgaid'],
+            pricecardgaid=data['pricecardgaid'],
             pricestargaid=message.text
         )
         
-        await message.answer("✅ Данные успешно добавлены!")
+        await message.answer("✅ Гайд успешно добавлен!")
         await state.clear()
         
     except sqlite3.ProgrammingError as e:
@@ -220,6 +228,6 @@ async def addpricestargaid(message: Message, state: FSMContext, bot: Bot):
         await message.answer("Ошибка при сохранении в базу данных. Пожалуйста, попробуйте снова.")
         await state.clear()
     except Exception as e:
-        logging.error(f"Непредвиденная ошибка в addpricestargaid: {e}")
-        await message.answer("Произошла непредвиденная ошибка. Пожалуйста, попробуйте позже.")
+        logging.error(f"Error in addpricestargaid: {str(e)}", exc_info=True)
+        await message.answer("⚠️ Произошла ошибка при сохранении. Пожалуйста, попробуйте снова.")
         await state.clear()
