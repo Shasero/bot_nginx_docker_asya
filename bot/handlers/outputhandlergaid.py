@@ -97,7 +97,7 @@ async def gaidselect(callback: CallbackQuery):
             gaid_selections[user_name].append(getgaidselect)
         p.append(gaid_selections)
         break
-    await callback.message.photo(f'{gaid.photo}')
+    await callback.message.answer_photo(f'{gaid.photo}')
     await callback.message.answer(f'{html.bold('Гайд:')} {gaid.namefail}\n{html.bold('Описание:')} {gaid.descriptiongaid}\n{html.bold('Стоимость в рублях:')} {gaid.pricecardgaid}\n{html.bold('Стоимость в звездах:')} {gaid.pricestargaid}', reply_markup=kb.payment_keyboard_gaid)
 
 
