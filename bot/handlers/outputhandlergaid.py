@@ -98,7 +98,7 @@ async def gaidselect(callback: CallbackQuery):
         p.append(gaid_selections)
         break
 
-    await callback.message.answer(f'{html.bold('Гайд:')} {gaid.namefail}\n{html.bold('Описание:')} {gaid.descriptiongaid}\n{html.bold('Стоимость в рублях:')} {gaid.pricecardgaid}\n{html.bold('Стоимость в звездах:')} {gaid.pricestargaid}', reply_markup=kb.payment_keyboard_gaid)
+    await callback.message.answer(f'{gaid.photo}{html.bold('Гайд:')} {gaid.namefail}\n{html.bold('Описание:')} {gaid.descriptiongaid}\n{html.bold('Стоимость в рублях:')} {gaid.pricecardgaid}\n{html.bold('Стоимость в звездах:')} {gaid.pricestargaid}', reply_markup=kb.payment_keyboard_gaid)
 
 
 @router.callback_query(F.data.startswith('stars_gaid'))
