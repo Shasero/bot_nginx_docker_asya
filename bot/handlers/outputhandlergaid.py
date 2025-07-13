@@ -11,6 +11,7 @@ import json
 import os
 import transliterate
 import os
+import logging 
 
 
 import keyboards.keyboard as kb
@@ -97,7 +98,7 @@ async def gaidselect(callback: CallbackQuery):
             gaid_selections[user_name].append(getgaidselect)
         p.append(gaid_selections)
         break
-    
+
     await callback.message.answer_photo(f'{gaid.photo}')
     await callback.message.answer(f'{html.bold('Гайд:')} {gaid.namefail}\n{html.bold('Описание:')} {gaid.descriptiongaid}\n{html.bold('Стоимость в рублях:')} {gaid.pricecardgaid}\n{html.bold('Стоимость в звездах:')} {gaid.pricestargaid}', reply_markup=kb.payment_keyboard_gaid)
 
@@ -162,19 +163,27 @@ async def payphotocheckget(callback: CallbackQuery, state: FSMContext):
 
 @router.message(Card_Pay_gaid.successful_photo_gaid)
 async def successfulphoto(message: Message, state: FSMContext, bot: Bot):
-    if message.text != "стоп":
-        await state.update_data(payphotocheck=message.photo[-1].file_id)
-        await bot.send_message(chat_id=clientidgaid, text='Ожидайте подтверждение вашей оплаты админом')
-        data = await state.get_data()
-        global photog
-        payphotocheck = data.get('payphotocheck')
-        photog = payphotocheck
-        chekmessage = await bot.send_photo(chat_id=intadmin_id, caption='Проверьте оплату на корректность:', photo=payphotocheck, reply_markup=kb.succsefull_keyboard_gaid)
-        await state.clear()
-        await asyncio.sleep(900)
-        await chekmessage.delete()
-    else:
-        await state.clear()
+    try:
+        if message.text != "стоп":
+            if not message.photo:
+                await message.answer('Прекрипите скриншот вашего чека по оплате пожалуйста')
+                return
+            else:
+                await state.update_data(payphotocheck=message.photo[-1].file_id)
+                await bot.send_message(chat_id=clientidgaid, text='Ожидайте подтверждение вашей оплаты админом')
+                data = await state.get_data()
+                global photog
+                payphotocheck = data.get('payphotocheck')
+                photog = payphotocheck
+                chekmessage = await bot.send_photo(chat_id=intadmin_id, caption='Проверьте оплату на корректность:', photo=payphotocheck, reply_markup=kb.succsefull_keyboard_gaid)
+                await state.clear()
+                await asyncio.sleep(900)
+                await chekmessage.delete()
+        else:
+            await state.clear()
+    except Exception as e:
+        logging.error(f"Error in successfulphoto: {e}", exc_info=True)
+        await message.answer("Ошибка при обработке фото. Попробуйте ещё раз.")
 
 
 @router.callback_query(F.data.startswith('true_gaid'))
