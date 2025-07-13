@@ -186,9 +186,10 @@ async def main() -> None:
         finally:
             print("Останавливаем бота...")
             await bot.session.close()
+            await dp.storage.close()
             print("Бот успешно остановлен")
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(level=logging.DEBUG)
     asyncio.run(main())
     
