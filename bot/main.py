@@ -1,12 +1,11 @@
 import asyncio
 import logging
 import os
-import sys
-import warnings
 
 from dotenv import load_dotenv
 from aiohttp import web
 from aiogram import Bot, Dispatcher, F
+from aiogram.types import Update
 from handlers.starthandler import router
 from database.models import async_main
 from aiogram.client.default import DefaultBotProperties
@@ -52,6 +51,42 @@ WEBAPP_PORT = 7111 #3001
 bot = Bot(token=token, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
 
 dp = Dispatcher()
+
+
+async def send_error_notification(bot: Bot, error: Exception):
+    """
+    Отправляет уведомление администратору об ошибке.
+    """
+    admin_id = os.getenv('ADMIN_ID')
+    if not admin_id:
+        logging.error("ADMIN_ID не установлен в .env файле!")
+        return
+        
+    try:
+        error_message = (
+            "⚠️ <b>Произошла ошибка в боте!</b>\n\n"
+            f"<b>Тип ошибки:</b> <code>{type(error).__name__}</code>\n"
+            f"<b>Описание:</b> <code>{str(error)}</code>\n\n"
+            "Проверьте логи для деталей."
+        )
+        await bot.send_message(admin_id, error_message)
+    except Exception as e:
+        logging.error(f"Не удалось отправить уведомление об ошибке: {e}")
+
+
+async def errors_handler(update: Update, exception: Exception):
+    """
+    Обработчик необработанных исключений.
+    Логирует ошибку и отправляет уведомление администратору.
+    """
+    logging.exception(f"Необработанное исключение: {exception}")
+    
+    try:
+        await send_error_notification(bot, exception)
+    except Exception as e:
+        logging.error(f"Не удалось отправить уведомление об ошибке: {e}")
+    
+    return True
 
 
 async def on_startup(bot: Bot) -> None:
@@ -137,6 +172,8 @@ dp.callback_query.register(UnConfirmanswerkurs, F.data.startswith('no_false_kurs
 dp.callback_query.register(ConfirmanswerYeskurs, F.data.startswith('ok_kurs'))
 dp.callback_query.register(UnConfirmanswernokurs, F.data.startswith('no_kurs'))
 
+dp.errors.register(errors_handler)
+
 # dp.startup.register(on_startup)
 # dp.shutdown.register(on_shutdown)
 
@@ -182,7 +219,9 @@ async def main() -> None:
         except KeyboardInterrupt:
             print("\nПолучен сигнал остановки...")
         except Exception as e:  # <-- ОБРАБОТКА ДЛЯ POLLING РЕЖИМА
-            print(f"\nКритическая ошибка: {e}")
+            logging.exception("Критическая ошибка в боте:")
+            await send_error_notification(bot, e)
+            raise  # Повторно поднимаем исключение для завершения работы
         finally:
             print("Останавливаем бота...")
             await bot.session.close()
