@@ -1,3 +1,6 @@
+import logging 
+from logging.handlers import RotatingFileHandler
+import json
 from aiogram import F, Router, html, Bot
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.filters import Command
@@ -7,21 +10,89 @@ from aiogram.fsm.context import FSMContext
 from dotenv import load_dotenv
 import asyncio
 import time
-import json
 import os
 import transliterate
-import os
-import logging 
+from datetime import datetime
 
 
 import keyboards.keyboard as kb
 import database.requests as rq
 
 
+class JsonFormatter(logging.Formatter):
+    def format(self, record):
+        log_record = {
+            "timestamp": datetime.utcnow().isoformat(),
+            "level": record.levelname,
+            "message": record.getMessage(),
+            "module": record.module,
+            "function": record.funcName,
+            "user_id": getattr(record, 'user_id', None),
+            "extra": getattr(record, 'extra', {})
+        }
+        if record.exc_info:
+            log_record["exception"] = self.formatException(record.exc_info)
+        return json.dumps(log_record, ensure_ascii=False)
+
+def setup_logger():
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.DEBUG)
+    
+    # Ротация логов (10 MB, 3 файла)
+    file_handler = RotatingFileHandler(
+        'logs/gaid_handler.log',
+        maxBytes=10*1024*1024,
+        backupCount=3,
+        encoding='utf-8'
+    )
+    file_handler.setFormatter(JsonFormatter())
+    
+    # Консольный вывод
+    console_handler = logging.StreamHandler()
+    console_handler.setFormatter(JsonFormatter())
+    
+    logger.addHandler(file_handler)
+    logger.addHandler(console_handler)
+    return logger
+
+logger = setup_logger()
+
+
 router = Router()
 gaid_selections = {}
 kurs_selections = {}
 getgaid = None
+
+
+def log_user_action(func):
+    """Декоратор для логирования действий пользователя"""
+    async def wrapper(*args, **kwargs):
+        message_or_callback = args[0]
+        user_id = getattr(message_or_callback.from_user, 'id', None)
+        extra = {'user_id': user_id}
+        
+        logger.info(
+            f"Start {func.__name__}",
+            extra={'extra': extra}
+        )
+        start_time = time.time()
+        
+        try:
+            result = await func(*args, **kwargs)
+            exec_time = time.time() - start_time
+            logger.info(
+                f"Completed {func.__name__} in {exec_time:.2f}s",
+                extra={'extra': {**extra, 'exec_time': exec_time}}
+            )
+            return result
+        except Exception as e:
+            logger.error(
+                f"Error in {func.__name__}: {str(e)}",
+                exc_info=True,
+                extra={'extra': extra}
+            )
+            raise
+    return wrapper
 
 
 
@@ -55,14 +126,18 @@ def transliterate_filename(filename):
         return filename
 
 @router.message(Command(commands='gaid'))
+@log_user_action
 async def gaid_start(message: Message, bot: Bot):
     if(await rq.proverka_gaids() == None):
+        logger.warning("Нет доступных гайдов")
         await bot.send_message(message.from_user.id,'Пока гайдов нет')
     else:
+        logger.debug("Отправка клавиатуры с гайдами")
         await bot.send_message(message.from_user.id,'📖Гайды: ',reply_markup=await kb.selectkeyboardgaid())
 
 
 @router.callback_query(F.data.startswith('selectgaid_'))
+@log_user_action
 async def gaidselect(callback: CallbackQuery):
     start_time = time.time()
     end_time = start_time + 15 * 60
@@ -80,6 +155,7 @@ async def gaidselect(callback: CallbackQuery):
         data_gaid[str(user_name)] = []
     
     gaidsel = await rq.get_gaid(getgaid)
+    logger.debug(f"Retrieved guide data: {getgaid}")
     
     for gaid in gaidsel:
         transliterated_filename = transliterate_filename(gaid.namefail)
@@ -100,7 +176,13 @@ async def gaidselect(callback: CallbackQuery):
         break
 
     await callback.message.answer_photo(f'{gaid.photo}')
-    await callback.message.answer(f'{html.bold('Гайд:')} {gaid.namefail}\n{html.bold('Описание:')} {gaid.descriptiongaid}\n{html.bold('Стоимость в рублях:')} {gaid.pricecardgaid}\n{html.bold('Стоимость в звездах:')} {gaid.pricestargaid}', reply_markup=kb.payment_keyboard_gaid)
+    await callback.message.answer(
+        f'{html.bold("Гайд:")} {gaid.namefail}\n'
+        f'{html.bold("Описание:")} {gaid.descriptiongaid}\n'
+        f'{html.bold("Стоимость в рублях:")} {gaid.pricecardgaid}\n'
+        f'{html.bold("Стоимость в звездах:")} {gaid.pricestargaid}', 
+        reply_markup=kb.payment_keyboard_gaid
+    )
 
 
 @router.callback_query(F.data.startswith('stars_gaid'))
@@ -217,13 +299,19 @@ async def UnConfirmanswer(callback: CallbackQuery, bot: Bot):
     await chekmessage.delete()
 
 @router.callback_query(F.data.startswith('ok_gaid'))
+@log_user_action
 async def ConfirmanswerYes(callback: CallbackQuery, bot: Bot):
     gaidsel = await rq.get_gaid(getgaid)
     await callback.answer()
     try:
         sendmessageg = await callback.message.answer('Отправляю гайд счастливчику🥳')
         for gaid in gaidsel:
-            await bot.send_document(chat_id=clientidgaid, document=gaid.fail)
+            await bot.send_document(
+                chat_id=clientidgaid,
+                document=gaid.fail,
+                caption=f"Гайд: {gaid.namefail}"
+            )
+        logger.info(f"Гайд доставлен {clientidgaid}")
     except TelegramBadRequest as e:
         await callback.message.answer('Гайд не отправился...\nОшибка уже отправлена Тех.Админу! Не переживайте, работы уже ведутся!')
         await bot.send_message(chat_id=clientidgaid, text="Не удалось отправить вам гайд. Мы работаем уже над этой проблемой. Обязательно вам пришлем гайд, как решим данную ошибку. Приносим свои извинения, за предоставленные неудобства!")
