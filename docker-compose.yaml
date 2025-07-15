@@ -11,6 +11,7 @@ services:
       - NGINX_HOST=${NGINX_HOST}
       - PHONE=${PHONE}
     volumes:
+      - ./logs:/bot/logs
       - ./data:/bot/data
       - ./.env:/bot/.env
     ports:

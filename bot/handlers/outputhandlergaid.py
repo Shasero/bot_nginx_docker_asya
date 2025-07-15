@@ -37,6 +37,8 @@ class JsonFormatter(logging.Formatter):
 def setup_logger():
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.DEBUG)
+
+    os.makedirs('logs', exist_ok=True)
     
     # Ротация логов (10 MB, 3 файла)
     file_handler = RotatingFileHandler(
