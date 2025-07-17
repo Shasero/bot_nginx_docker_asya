@@ -105,16 +105,6 @@ async def delete_webhook():
     await bot.session.close()
 
 
-@dp.message(Command("test_error"))
-async def test_error(message: Message):
-    """Тестовая команда для проверки уведомлений об ошибках."""
-    try:
-        raise ValueError("Это тестовая ошибка для проверки уведомлений!")
-    except Exception as e:
-        await errors_handler(None, e)  # Явный вызов обработчика
-        await message.answer("Произошла тестовая ошибка. Проверьте уведомления.")
- 
-
 
 dp.message.register(authorization_start, Command(commands='adminsettings'))
 
