@@ -74,15 +74,18 @@ async def send_error_notification(bot: Bot, error: Exception):
         logging.error(f"Не удалось отправить уведомление об ошибке: {e}")
 
 
-async def errors_handler(update: Update, exception: Exception):
+async def errors_handler(update: Update, exception: Exception) -> bool:
     """
     Обработчик необработанных исключений.
+    Логирует ошибку и отправляет уведомление администратору.
     """
-    logging.exception(f"Необработанное исключение: {exception}")
+    logging.exception(f"Необработанное исключение в обработчике: {exception}")
+    
     try:
         await send_error_notification(bot, exception)
     except Exception as e:
         logging.error(f"Не удалось отправить уведомление об ошибке: {e}")
+    
     return True
 
 
@@ -102,12 +105,14 @@ async def delete_webhook():
     await bot.session.close()
 
 
-from aiogram.filters import Command
-
 @dp.message(Command("test_error"))
 async def test_error(message: Message):
     """Тестовая команда для проверки уведомлений об ошибках."""
-    raise ValueError("Это тестовая ошибка для проверки уведомлений!")
+    try:
+        raise ValueError("Это тестовая ошибка для проверки уведомлений!")
+    except Exception as e:
+        await errors_handler(None, e)  # Явный вызов обработчика
+        await message.answer("Произошла тестовая ошибка. Проверьте уведомления.")
  
 
 
