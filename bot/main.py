@@ -5,7 +5,7 @@ import os
 from dotenv import load_dotenv
 from aiohttp import web
 from aiogram import Bot, Dispatcher, F
-from aiogram.types import Update
+from aiogram.types import Update, Message
 from handlers.starthandler import router
 from database.models import async_main
 from aiogram.client.default import DefaultBotProperties
@@ -77,15 +77,12 @@ async def send_error_notification(bot: Bot, error: Exception):
 async def errors_handler(update: Update, exception: Exception):
     """
     Обработчик необработанных исключений.
-    Логирует ошибку и отправляет уведомление администратору.
     """
     logging.exception(f"Необработанное исключение: {exception}")
-    
     try:
         await send_error_notification(bot, exception)
     except Exception as e:
         logging.error(f"Не удалось отправить уведомление об ошибке: {e}")
-    
     return True
 
 
@@ -103,6 +100,14 @@ async def delete_webhook():
     bot = Bot(token=token) 
     await bot.delete_webhook()
     await bot.session.close()
+
+
+from aiogram.filters import Command
+
+@dp.message(Command("test_error"))
+async def test_error(message: Message):
+    """Тестовая команда для проверки уведомлений об ошибках."""
+    raise ValueError("Это тестовая ошибка для проверки уведомлений!")
  
 
 

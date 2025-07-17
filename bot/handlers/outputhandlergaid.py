@@ -12,7 +12,7 @@ import asyncio
 import time
 import os
 import transliterate
-from datetime import datetime
+from datetime import datetime, timezone 
 
 
 import keyboards.keyboard as kb
@@ -22,7 +22,7 @@ import database.requests as rq
 class JsonFormatter(logging.Formatter):
     def format(self, record):
         log_record = {
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "level": record.levelname,
             "message": record.getMessage(),
             "module": record.module,
@@ -67,32 +67,24 @@ getgaid = None
 
 
 def log_user_action(func):
-    """Декоратор для логирования действий пользователя"""
     async def wrapper(*args, **kwargs):
+        filtered_kwargs = {k: v for k, v in kwargs.items() if k in func.__annotations__}
         message_or_callback = args[0]
         user_id = getattr(message_or_callback.from_user, 'id', None)
         extra = {'user_id': user_id}
         
-        logger.info(
-            f"Start {func.__name__}",
-            extra={'extra': extra}
-        )
+        logger.info(f"Start {func.__name__}", extra={'extra': extra})
         start_time = time.time()
         
         try:
-            result = await func(*args, **kwargs)
+            result = await func(*args, **filtered_kwargs)
             exec_time = time.time() - start_time
-            logger.info(
-                f"Completed {func.__name__} in {exec_time:.2f}s",
-                extra={'extra': {**extra, 'exec_time': exec_time}}
-            )
+            logger.info(f"Completed {func.__name__} in {exec_time:.2f}s",
+                      extra={'extra': {**extra, 'exec_time': exec_time}})
             return result
         except Exception as e:
-            logger.error(
-                f"Error in {func.__name__}: {str(e)}",
-                exc_info=True,
-                extra={'extra': extra}
-            )
+            logger.error(f"Error in {func.__name__}: {str(e)}", exc_info=True,
+                       extra={'extra': extra})
             raise
     return wrapper
 
@@ -129,7 +121,7 @@ def transliterate_filename(filename):
 
 @router.message(Command(commands='gaid'))
 @log_user_action
-async def gaid_start(message: Message, bot: Bot):
+async def gaid_start(message: Message, bot: Bot, **kwargs):
     if(await rq.proverka_gaids() == None):
         logger.warning("Нет доступных гайдов")
         await bot.send_message(message.from_user.id,'Пока гайдов нет')
@@ -140,7 +132,7 @@ async def gaid_start(message: Message, bot: Bot):
 
 @router.callback_query(F.data.startswith('selectgaid_'))
 @log_user_action
-async def gaidselect(callback: CallbackQuery):
+async def gaidselect(callback: CallbackQuery,  **kwargs):
     start_time = time.time()
     end_time = start_time + 15 * 60
     await callback.answer('')
@@ -302,7 +294,7 @@ async def UnConfirmanswer(callback: CallbackQuery, bot: Bot):
 
 @router.callback_query(F.data.startswith('ok_gaid'))
 @log_user_action
-async def ConfirmanswerYes(callback: CallbackQuery, bot: Bot):
+async def ConfirmanswerYes(callback: CallbackQuery, bot: Bot, **kwargs):
     gaidsel = await rq.get_gaid(getgaid)
     await callback.answer()
     try:
