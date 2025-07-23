@@ -46,20 +46,17 @@ services:
     volumes:
       - './certbot/www:/var/www/certbot'
       - './certbot/conf:/etc/letsencrypt'
-    env_file:
-      - ./.env
-    restart: on-failure
     depends_on:
       nginx:
-        condition: service_started
+        condition: service_healthy
     networks:
       - def
     command: >
       sh -c "
-      sleep 15 &&
+      while ! curl -s http://nginx >/dev/null; do sleep 1; done;
       certbot certonly --webroot -w /var/www/certbot
       --email romaa251205@gmail.com
-      -d $${NGINX_HOST}
+      -d bot.shasero.ru
       --agree-tos
       --non-interactive
       --force-renewal
