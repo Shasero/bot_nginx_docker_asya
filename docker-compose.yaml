@@ -1,15 +1,14 @@
-networks:
-  def:
+version: '3.8'
 
 services:
   bot:
+    build: .
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:7111/healthcheck || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:7111/health || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 3
       start_period: 30s
-    build: .
     environment:
       - TOKEN=${TOKEN}
       - ADMIN_ID=${ADMIN_ID}
@@ -20,54 +19,41 @@ services:
       - ./logs:/bot/logs
       - ./data:/bot/data
       - ./.env:/bot/.env
-    ports:
-      - "7111:7111"
+    expose:
+      - "7111"
     restart: always
-    dns:
-      - 8.8.8.8
-      - 1.1.1.1
     networks:
-      - def
+      - bot_network
 
   nginx:
     image: nginx:stable-alpine
-    depends_on:
-      bot:
-        condition: service_started
-    restart: on-failure
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost"]
-      interval: 30s
-      timeout: 10s
-      start_period: 60s
     ports:
       - "80:80"
       - "443:443"
-    env_file:
-      - ./.env
-    environment:
-      - NGINX_HOST=${NGINX_HOST}
-      - WEBHOOK_URL=https://${NGINX_HOST}/webhook
     volumes:
-      - './nginx.conf:/etc/nginx/nginx.conf'
-      - './certbot/www:/var/www/certbot'
-      - './certbot/conf:/etc/letsencrypt'
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./certbot/www:/var/www/certbot
+      - ./certbot/conf:/etc/letsencrypt
+    depends_on:
+      bot:
+        condition: service_started
+    restart: unless-stopped
     networks:
-      - def
+      - bot_network
 
   certbot:
     image: certbot/certbot:v4.0.0
     volumes:
-      - './certbot/www:/var/www/certbot'
-      - './certbot/conf:/etc/letsencrypt'
+      - ./certbot/www:/var/www/certbot
+      - ./certbot/conf:/etc/letsencrypt
     depends_on:
       nginx:
-        condition: service_healthy
+        condition: service_started
     networks:
-      - def
+      - bot_network
     command: >
       sh -c "
-      while ! curl -s http://nginx >/dev/null; do sleep 1; done;
+      sleep 15
       certbot certonly --webroot -w /var/www/certbot
       --email romaa251205@gmail.com
       -d bot.shasero.ru
@@ -75,3 +61,7 @@ services:
       --non-interactive
       --force-renewal
       "
+
+networks:
+  bot_network:
+    driver: bridge

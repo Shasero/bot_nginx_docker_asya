@@ -5,7 +5,7 @@ import os
 from dotenv import load_dotenv
 from aiohttp import web
 from aiogram import Bot, Dispatcher, F
-from aiogram.types import Update, Message
+from aiogram.types import Update
 from handlers.starthandler import router
 from database.models import async_main
 from aiogram.client.default import DefaultBotProperties
@@ -179,6 +179,10 @@ dp.errors.register(errors_handler)
 
 dp.include_router(router)
 
+async def healthcheck(request: web.Request) -> web.Response:
+    """Endpoint для проверки работоспособности бота"""
+    return web.Response(text="OK", status=200)
+
     
 async def main() -> None:
     await async_main()
@@ -187,6 +191,9 @@ async def main() -> None:
     
     if IS_WEBHOOK == 1:
         app = web.Application()
+
+        app.router.add_get('/health', healthcheck)  
+
         webhook_requests_handler = SimpleRequestHandler(
             dispatcher=dp,
             bot=bot
