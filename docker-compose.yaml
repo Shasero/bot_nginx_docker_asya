@@ -3,6 +3,12 @@ networks:
 
 services:
   bot:
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:7111/healthcheck || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
     build: .
     environment:
       - TOKEN=${TOKEN}
