@@ -31,11 +31,15 @@ services:
 
   nginx:
     image: nginx:stable-alpine
+    depends_on:
+      bot:
+        condition: service_started
+    restart: on-failure
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
+      interval: 30s
+      timeout: 10s
+      start_period: 60s
     ports:
       - "80:80"
       - "443:443"
