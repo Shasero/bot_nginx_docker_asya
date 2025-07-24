@@ -51,16 +51,7 @@ services:
         condition: service_started
     networks:
       - bot_network
-    command: >
-      sh -c "
-      sleep 15
-      certbot certonly --webroot -w /var/www/certbot
-      --email romaa251205@gmail.com
-      -d bot.shasero.ru
-      --agree-tos
-      --non-interactive
-      --force-renewal
-      "
+    command: ["sh", "-c", "sleep 5; certbot certonly --standalone -d bot.shasero.ru --email romaa251205@gmail.com --agree-tos --non-interactive"]
 
 networks:
   bot_network:
