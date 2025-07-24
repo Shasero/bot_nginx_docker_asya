@@ -45,7 +45,6 @@ services:
       - "443:443"
     env_file:
       - ./.env
-    restart: unless-stopped
     environment:
       - NGINX_HOST=${NGINX_HOST}
       - WEBHOOK_URL=https://${NGINX_HOST}/webhook
