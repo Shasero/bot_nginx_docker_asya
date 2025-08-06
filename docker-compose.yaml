@@ -1,0 +1,40 @@
+services:
+  bot:
+    build: .
+    restart: always
+    environment:
+      - TOKEN=${TOKEN}
+      - NGINX_HOST=${NGINX_HOST}
+    volumes:
+      - ./data:/bot/data
+      - ./.env:/bot/.env
+    expose:
+      - "7111"
+    networks:
+      - bot_network
+  nginx:
+    image: nginx:1.23-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    restart: always
+    environment:
+      - NGINX_HOST=${NGINX_HOST}
+    volumes:
+      - ./nginx/first_start/:/etc/nginx/templates/:ro
+      # - ./nginx/templates/:/etc/nginx/templates/:ro
+      - ./certbot/www:/var/www/certbot/:rw
+      - ./certbot/conf/:/etc/nginx/ssl/:ro
+    networks:
+      - bot_network
+  certbot:
+    image: certbot/certbot:v2.5.0
+    volumes:
+      - ./certbot/www/:/var/www/certbot/:rw
+      - ./certbot/conf/:/etc/letsencrypt/:rw
+    networks:
+      - bot_network
+
+networks:
+  bot_network:
+      driver: bridge
