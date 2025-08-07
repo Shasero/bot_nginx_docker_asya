@@ -186,6 +186,9 @@ async def healthcheck(request: web.Request) -> web.Response:
 
     
 async def main() -> None:
+    print("Бот запущен! Проверка вебхука...")
+    await bot.set_webhook(url=f"{WEBHOOK_HOST}{WEBHOOK_PATH}")
+    print(f"Вебхук установлен на {WEBHOOK_HOST}{WEBHOOK_PATH}")
     await async_main()
     await delete_webhook()
     await set_commands(bot)
