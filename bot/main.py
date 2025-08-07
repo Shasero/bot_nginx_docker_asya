@@ -181,6 +181,7 @@ dp.include_router(router)
 
 async def healthcheck(request: web.Request) -> web.Response:
     """Endpoint для проверки работоспособности бота"""
+    print("Healthcheck endpoint called")  # Добавьте эту строку
     return web.Response(text="OK", status=200)
 
     
