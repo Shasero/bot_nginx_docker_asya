@@ -12,6 +12,11 @@ services:
       - "7111"
     networks:
       - bot_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7111/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
   nginx:
     image: nginx:1.23-alpine
     ports:
@@ -22,7 +27,7 @@ services:
       - NGINX_HOST=${NGINX_HOST}
     volumes:
       # - ./nginx/first_start:/etc/nginx/conf.d:ro
-      - ./nginx/templates:/etc/nginx/conf.d:ro
+      - ./nginx/templates:/etc/nginx/conf.d:rw
       - ./certbot/www:/var/www/certbot:rw
       - ./certbot/conf:/etc/nginx/ssl:ro
     networks:
