@@ -28,15 +28,21 @@ services:
     networks:
       - bot_network
   certbot:
-    image: certbot/certbot:v2.5.0
-    command: sh -c "certbot certonly --standalone --agree-tos --non-interactive --email romaa251205@gmail.com -d ${NGINX_HOST} && sleep infinity"
-    volumes:
-      - ./certbot/www:/var/www/certbot:rw
-      - ./certbot/conf:/etc/letsencrypt:rw
-    depends_on:
-      - nginx
-    networks:
-      - bot_network
+  image: certbot/certbot:v2.5.0
+  command: 
+    - certonly
+    - --standalone
+    - --agree-tos
+    - --non-interactive
+    - --email romaa251205@gmail.com
+    - -d bot.shasero.ru
+  volumes:
+    - ./certbot/www:/var/www/certbot:rw
+    - ./certbot/conf:/etc/letsencrypt:rw
+  depends_on:
+    - nginx
+  networks:
+    - bot_network
 
 networks:
   bot_network:
