@@ -26,7 +26,6 @@ services:
       - "443:443"
     restart: always
     volumes:
-      # - ./nginx/first_start:/etc/nginx/conf.d:rw
       - ./nginx/templates:/etc/nginx/conf.d:rw
       - ./certbot/www:/var/www/certbot:rw
       - ./certbot/conf:/etc/letsencrypt:rw
@@ -39,14 +38,12 @@ services:
   certbot:
     image: certbot/certbot:v2.5.0
     command: [
-      "certonly",
+      "renew",
       "--webroot",
       "--webroot-path=/var/www/certbot",
-      "--agree-tos",
-      "--non-interactive",
-      "--email=romaa251205@gmail.com",
-      "-d", "bot.shasero.ru",
-      "--keep-until-expiring"
+      "--quiet",
+      "--post-hook",
+      "nginx -s reload"
     ]
     volumes:
       - ./certbot/www:/var/www/certbot:rw
