@@ -26,8 +26,9 @@ services:
       - "443:443"
     restart: always
     volumes:
-      - ./nginx/first_start:/etc/nginx/conf.d:rw  # Используем начальную конфигурацию
+      - ./nginx/first_start:/etc/nginx/conf.d:rw
       - ./certbot/www:/var/www/certbot:rw
+      - ./certbot/conf:/etc/letsencrypt:rw
     networks:
       - bot_network
     depends_on:
@@ -51,19 +52,6 @@ services:
       - ./certbot/conf:/etc/letsencrypt:rw
     depends_on:
       - nginx
-    networks:
-      - bot_network
-
-  nginx_ssl:
-    image: nginx:1.23-alpine
-    ports:
-      - "443:443"
-    restart: always
-    volumes:
-      - ./nginx/templates:/etc/nginx/conf.d:rw  # Основная конфигурация с SSL
-      - ./certbot/conf:/etc/nginx/ssl:ro
-    depends_on:
-      - certbot
     networks:
       - bot_network
 
