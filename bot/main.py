@@ -190,21 +190,24 @@ async def main() -> None:
     await set_commands(bot)
     
     if IS_WEBHOOK == 1:
+        # Сначала создаем минимальный сервер для healthcheck
+        health_app = web.Application()
+        health_app.router.add_get('/health', healthcheck)
+        
+        health_runner = web.AppRunner(health_app)
+        await health_runner.setup()
+        health_site = web.TCPSite(health_runner, WEBAPP_HOST, WEBAPP_PORT)
+        await health_site.start()
+        
+        # Затем основной сервер
         app = web.Application()
-
-        app.router.add_get('/health', healthcheck)  
-
-        webhook_requests_handler = SimpleRequestHandler(
-            dispatcher=dp,
-            bot=bot
-        )
+        webhook_requests_handler = SimpleRequestHandler(dispatcher=dp, bot=bot)
         webhook_requests_handler.register(app, path=WEBHOOK_PATH)
         setup_application(app, dp, bot=bot)
         
         runner = web.AppRunner(app)
         await runner.setup()
-        site = web.TCPSite(runner, WEBAPP_HOST, WEBAPP_PORT)
-        await site.start()
+        await web.TCPSite(runner, WEBAPP_HOST, WEBAPP_PORT).start()
         
         print(f"Бот запущен на {WEBHOOK_HOST}")
         try:
