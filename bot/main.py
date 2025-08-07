@@ -193,17 +193,13 @@ async def main() -> None:
     if IS_WEBHOOK == 1:
         await asyncio.sleep(5)
 
-        # Сначала создаем минимальный сервер для healthcheck
-        health_app = web.Application()
-        health_app.router.add_get('/health', healthcheck)
-        
-        health_runner = web.AppRunner(health_app)
-        await health_runner.setup()
-        health_site = web.TCPSite(health_runner, WEBAPP_HOST, WEBAPP_PORT)
-        await health_site.start()
-        
-        # Затем основной сервер
+        # Создаем один сервер с обоими обработчиками
         app = web.Application()
+        
+        # Добавляем healthcheck
+        app.router.add_get('/health', healthcheck)
+        
+        # Добавляем webhook
         webhook_requests_handler = SimpleRequestHandler(dispatcher=dp, bot=bot)
         webhook_requests_handler.register(app, path=WEBHOOK_PATH)
         setup_application(app, dp, bot=bot)

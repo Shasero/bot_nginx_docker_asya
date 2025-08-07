@@ -13,11 +13,11 @@ services:
     networks:
       - bot_network
     healthcheck:
-      test: ["CMD-SHELL", "timeout 5 bash -c 'until curl -f http://localhost:7111/health; do sleep 1; done' || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:7111/health || exit 1"]
       interval: 30s
-      timeout: 10s
+      timeout: 5s
       retries: 5
-      start_period: 40s
+      start_period: 10s
 
   nginx:
     image: nginx:1.23-alpine
@@ -25,8 +25,6 @@ services:
       - "80:80"
       - "443:443"
     restart: always
-    environment:
-      - NGINX_HOST=bot.shasero.ru
     volumes:
       - ./nginx/templates:/etc/nginx/conf.d:rw
       - ./certbot/www:/var/www/certbot:rw
@@ -36,6 +34,8 @@ services:
     depends_on:
       bot:
         condition: service_healthy
+      certbot:
+        condition: service_completed_successfully
 
   certbot:
     image: certbot/certbot:v2.5.0
