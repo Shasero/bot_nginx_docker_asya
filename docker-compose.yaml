@@ -29,13 +29,15 @@ services:
       - bot_network
   certbot:
     image: certbot/certbot:v2.5.0
-    command: 
-      - certonly
-      - --standalone
-      - --agree-tos
-      - --non-interactive
-      - --email=romaa251205@gmail.com
-      - -d bot.shasero.ru
+    command: [
+      "certonly",
+      "--webroot",
+      "--webroot-path=/var/www/certbot",
+      "--agree-tos",
+      "--non-interactive",
+      "--email=romaa251205@gmail.com",
+      "-d", "bot.shasero.ru"
+    ]
     volumes:
       - ./certbot/www:/var/www/certbot:rw
       - ./certbot/conf:/etc/letsencrypt:rw
