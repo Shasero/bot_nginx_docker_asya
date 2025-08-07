@@ -34,7 +34,7 @@ services:
       - --standalone
       - --agree-tos
       - --non-interactive
-      - --email romaa251205@gmail.com
+      - --email=romaa251205@gmail.com
       - -d bot.shasero.ru
     volumes:
       - ./certbot/www:/var/www/certbot:rw
