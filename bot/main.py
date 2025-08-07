@@ -190,6 +190,8 @@ async def main() -> None:
     await set_commands(bot)
     
     if IS_WEBHOOK == 1:
+        await asyncio.sleep(5)
+
         # Сначала создаем минимальный сервер для healthcheck
         health_app = web.Application()
         health_app.router.add_get('/health', healthcheck)
