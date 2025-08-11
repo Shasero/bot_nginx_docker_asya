@@ -49,7 +49,7 @@ async def addnamefail(message: Message, state: FSMContext, bot: Bot):
         
         # Проверка на уникальность названия
         existing_gaid = await rq.get_gaid(message.text.strip())
-        if existing_gaid and await existing_gaid.first() is not None:
+        if existing_gaid and existing_gaid.first() is not None:
             await message.answer("⚠️ Гайд с таким названием уже существует. Пожалуйста, придумайте другое название.")
             return
             
