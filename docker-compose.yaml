@@ -32,7 +32,7 @@ services:
     networks:
       - bot_network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      test: ["CMD", "curl", "-f", "http://localhost/.well-known/acme-challenge/"]
       interval: 30s
       timeout: 5s
       retries: 3
