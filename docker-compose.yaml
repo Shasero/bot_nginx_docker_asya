@@ -35,7 +35,8 @@ services:
     networks:
       - bot_network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost/.well-known/acme-challenge/"]
+      disable: true
+      # test: ["CMD", "curl", "-f", "http://localhost/.well-known/acme-challenge/"]
       # test: ["CMD", "curl", "-f", "http://localhost"]
       # interval: 30s
       # timeout: 5s
