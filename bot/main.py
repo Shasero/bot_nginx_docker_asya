@@ -187,43 +187,47 @@ async def healthcheck(request: web.Request) -> web.Response:
     
 async def main() -> None:
     print("Бот запущен! Проверка вебхука...")
-    await bot.set_webhook(url=f"{WEBHOOK_HOST}{WEBHOOK_PATH}")
-    print(f"Вебхук установлен на {WEBHOOK_HOST}{WEBHOOK_PATH}")
     await async_main()
-    await delete_webhook()
     await set_commands(bot)
     
     if IS_WEBHOOK == 1:
-        await asyncio.sleep(5)
+        # Удаляем старый вебхук перед установкой нового
+        await bot.delete_webhook()
+        
+        # Устанавливаем новый вебхук
+        try:
+            await bot.set_webhook(
+                url=f"{WEBHOOK_HOST}{WEBHOOK_PATH}",
+                drop_pending_updates=True
+            )
+            print(f"Вебхук установлен на {WEBHOOK_HOST}{WEBHOOK_PATH}")
+        except Exception as e:
+            print(f"Ошибка при установке вебхука: {e}")
+            return
 
-        # Создаем один сервер с обоими обработчиками
         app = web.Application()
-        
-        # Добавляем healthcheck
         app.router.add_get('/health', healthcheck)
-        
-        # Добавляем webhook
         webhook_requests_handler = SimpleRequestHandler(dispatcher=dp, bot=bot)
         webhook_requests_handler.register(app, path=WEBHOOK_PATH)
         setup_application(app, dp, bot=bot)
         
         runner = web.AppRunner(app)
         await runner.setup()
-        await web.TCPSite(runner, WEBAPP_HOST, WEBAPP_PORT).start()
+        site = web.TCPSite(runner, WEBAPP_HOST, WEBAPP_PORT)
+        await site.start()
         
         print(f"Бот запущен на {WEBHOOK_HOST}")
         try:
             while True:
                 await asyncio.sleep(3600)
-        except KeyboardInterrupt:
+        except (KeyboardInterrupt, SystemExit):
             print("\nПолучен сигнал остановки...")
-        except Exception as e:  # <-- ДОБАВЛЯЕМ ОБРАБОТКУ ДРУГИХ ИСКЛЮЧЕНИЙ
+        except Exception as e:
             print(f"\nКритическая ошибка: {e}")
-        finally:  # <-- ЭТОТ БЛОК ВЫПОЛНИТСЯ В ЛЮБОМ СЛУЧАЕ
+        finally:
             print("Останавливаем бота...")
             await bot.session.close()
-            if IS_WEBHOOK == 1:
-                await runner.cleanup()
+            await runner.cleanup()
             print("Бот успешно остановлен")
     else:
         try:
