@@ -26,17 +26,18 @@ services:
       - "443:443"
     restart: always
     volumes:
-      - ./nginx/templates:/etc/nginx/conf.d:rw
+      - ./nginx/first_start_last/default.conf:/etc/nginx/conf.d/default.conf:ro
+      # - ./nginx/templates:/etc/nginx/conf.d:rw
       - ./certbot/www:/var/www/certbot:rw
       - ./certbot/conf:/etc/letsencrypt:rw
     networks:
       - bot_network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost/.well-known/acme-challenge/"]
+      test: ["CMD", "curl", "-f", "http://localhost"]
       interval: 30s
       timeout: 5s
       retries: 3
-      start_period: 10s
+      start_period: 30s
     depends_on:
       bot:
         condition: service_healthy
@@ -50,7 +51,8 @@ services:
       "--email=romaa251205@gmail.com", 
       "--agree-tos",
       "--no-eff-email",
-      "--force-renewal",
+      # "--force-renewal",
+      "--staging",
       "-d", "bot.shasero.ru",
       "--quiet"
     ]
@@ -60,6 +62,17 @@ services:
     depends_on:
         nginx:
           condition: service_healthy
+    networks:
+      - bot_network
+
+  certbot-renew:
+    image: certbot/certbot
+    command: renew --webroot -w /var/www/certbot --quiet
+    volumes:
+      - ./certbot/www:/var/www/certbot
+      - ./certbot/conf:/etc/letsencrypt
+    depends_on:
+      - nginx
     networks:
       - bot_network
 
