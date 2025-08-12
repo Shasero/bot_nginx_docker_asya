@@ -43,8 +43,9 @@ services:
       # retries: 3
       # start_period: 30s
     depends_on:
-      bot:
-        condition: service_healthy
+      - certbot
+      # bot:
+      #   condition: service_healthy
 
   certbot:
     image: certbot/certbot:v2.5.0
