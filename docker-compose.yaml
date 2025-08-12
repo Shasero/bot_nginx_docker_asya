@@ -54,7 +54,7 @@ services:
       "--agree-tos",
       "--no-eff-email",
       "-d", "bot.shasero.ru",
-      "--quiet"
+      "--debug"  
     ]
     volumes:
       - ./certbot/www:/var/www/certbot:rw
