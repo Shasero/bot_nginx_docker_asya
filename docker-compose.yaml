@@ -48,11 +48,9 @@ services:
       "certonly",
       "--webroot",
       "--webroot-path=/var/www/certbot",
-      "--email=romaa251205@gmail.com", 
+      "--email=romaa251205@gmail.com",
       "--agree-tos",
       "--no-eff-email",
-      # "--force-renewal",
-      "--staging",
       "-d", "bot.shasero.ru",
       "--quiet"
     ]
