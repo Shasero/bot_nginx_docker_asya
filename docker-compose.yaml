@@ -26,10 +26,9 @@ services:
       - "443:443"
     restart: always
     volumes:
-      - ./nginx/first_start:/etc/nginx/conf.d:rw
-      # - ./nginx/templates:/etc/nginx/conf.d:rw
-      # - ./certbot/www:/var/www/certbot:rw
-      - ./certbot/conf:/etc/letsencrypt:rw
+      # - ./nginx/first_start:/etc/nginx/conf.d:rw
+      - ./nginx/templates:/etc/nginx/conf.d:rw
+      - ./certbot/conf:/etc/letsencrypt:ro
       - ./certbot/www:/var/www/certbot:rw
     networks:
       - bot_network
