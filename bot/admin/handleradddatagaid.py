@@ -47,9 +47,9 @@ async def addnamefail(message: Message, state: FSMContext, bot: Bot):
             await message.answer("❌ Название гайда должно содержать минимум 3 символа.")
             return
         
-        # Проверка на уникальность названия
+        # Исправленная проверка на уникальность названия
         existing_gaid = await rq.get_gaid(message.text.strip())
-        if existing_gaid and existing_gaid.first() is not None:
+        if existing_gaid:  # Просто проверяем, что результат не пустой
             await message.answer("⚠️ Гайд с таким названием уже существует. Пожалуйста, придумайте другое название.")
             return
             
@@ -57,7 +57,7 @@ async def addnamefail(message: Message, state: FSMContext, bot: Bot):
         await state.set_state(AddGaid.photo)
         await message.answer("📸 Теперь отправьте фото для гайда (макс. 5MB):")
     except Exception as e:
-        logging.error(f"Error in addnamefail: {e}")
+        logging.error(f"Error in addnamefail: {e}", exc_info=True)  # Добавлен exc_info для полного traceback
         await message.answer("⚠️ Ошибка при обработке названия. Попробуйте ещё раз.")
 
 
