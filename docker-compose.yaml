@@ -31,30 +31,37 @@ services:
       - ./certbot/conf:/etc/letsencrypt:rw
     networks:
       - bot_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
     depends_on:
       bot:
         condition: service_healthy
 
   certbot:
-  image: certbot/certbot:v2.5.0
-  command: [
-    "certonly",
-    "--webroot",
-    "--webroot-path=/var/www/certbot",
-    "--email=romaa251205@gmail.com", 
-    "--agree-tos",
-    "--no-eff-email",
-    "--force-renewal",
-    "-d", "bot.shasero.ru",
-    "--quiet"
-  ]
-  volumes:
-    - ./certbot/www:/var/www/certbot:rw
-    - ./certbot/conf:/etc/letsencrypt:rw
-  depends_on:
-    - nginx
-  networks:
-    - bot_network
+    image: certbot/certbot:v2.5.0
+    command: [
+      "certonly",
+      "--webroot",
+      "--webroot-path=/var/www/certbot",
+      "--email=romaa251205@gmail.com", 
+      "--agree-tos",
+      "--no-eff-email",
+      "--force-renewal",
+      "-d", "bot.shasero.ru",
+      "--quiet"
+    ]
+    volumes:
+      - ./certbot/www:/var/www/certbot:rw
+      - ./certbot/conf:/etc/letsencrypt:rw
+    depends_on:
+        nginx:
+          condition: service_healthy
+    networks:
+      - bot_network
 
 networks:
   bot_network:
