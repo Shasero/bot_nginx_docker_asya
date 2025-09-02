@@ -1,5 +1,9 @@
 from aiogram import F, Router, Bot
+<<<<<<< HEAD
 from aiogram.types import CallbackQuery, Message, InputMediaPhoto, InputMediaVideo, InputMediaDocument
+=======
+from aiogram.types import CallbackQuery, Message
+>>>>>>> upgrade/main
 from dotenv import load_dotenv
 from aiogram.fsm.state import StatesGroup, State
 from aiogram.fsm.context import FSMContext
@@ -145,6 +149,7 @@ async def get_custom_message(message: Message, state: FSMContext, bot: Bot):
     else:
         await bot.send_message(message.from_user.id, text=f'Не успешная рассылка. Не удалось отправить {failure_count} пользователям.')
 
+<<<<<<< HEAD
     await state.clear()
 
 
@@ -191,3 +196,6 @@ async def get_custom_message(message: Message, state: FSMContext, bot: Bot):
 #     else:
 #         await bot.send_message(message.from_user.id, text='Не успешная рассылка')
 #     await state.clear()
+=======
+    await state.clear()
+>>>>>>> upgrade/main

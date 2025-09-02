@@ -1,17 +1,27 @@
+<<<<<<< HEAD
 from aiogram import F, Router, html, Bot
 from aiogram.filters import Command
 from aiogram.types import Message, CallbackQuery, FSInputFile
 from aiogram.fsm.state import StatesGroup, State
 from aiogram.fsm.context import FSMContext
+=======
+from aiogram import F, Router, Bot
+from aiogram.types import CallbackQuery, FSInputFile
+>>>>>>> upgrade/main
 import os
 import json
 
 router = Router()
 
+<<<<<<< HEAD
 GAID_DATA_JSON = "gaid_data.json"
 KURS_DATA_JSON = "kurs_data.json"
 GAID_DATA_TXT = "gaid_data.txt"
 KURS_DATA_TXT = "kurs_data.txt"
+=======
+STAT_DATA_JSON = "stat_data.json"
+STAT_DATA_TXT = "stat_data.txt"
+>>>>>>> upgrade/main
 
 
 async def convert_json_to_txt(json_file, txt_file):
@@ -45,6 +55,7 @@ async def statistica(callback: CallbackQuery, bot: Bot):
         await callback.message.answer("Отправляю файлы статистики...")
 
         # Convert JSON to TXT
+<<<<<<< HEAD
         gaid_converted = await convert_json_to_txt(GAID_DATA_JSON, GAID_DATA_TXT)
         kurs_converted = await convert_json_to_txt(KURS_DATA_JSON, KURS_DATA_TXT)
 
@@ -60,6 +71,16 @@ async def statistica(callback: CallbackQuery, bot: Bot):
                 await bot.send_document(chat_id=chat_id, document=kurs_date_file)
             else:
                 await callback.message.answer(f"Файл {KURS_DATA_JSON} не найден или не удалось его преобразовать.")
+=======
+        gaid_converted = await convert_json_to_txt(STAT_DATA_JSON, STAT_DATA_TXT)
+
+        try:
+            if gaid_converted and os.path.exists(STAT_DATA_TXT):
+                gaid_data_file = FSInputFile(STAT_DATA_TXT)
+                await bot.send_document(chat_id=chat_id, document=gaid_data_file)
+            else:
+                await callback.message.answer( f"Файл {STAT_DATA_JSON} не найден или не удалось его преобразовать.")
+>>>>>>> upgrade/main
         except Exception as e:
             await callback.message.answer(f"Произошла ошибка при отправке файлов: {e}")
     except Exception as e:
