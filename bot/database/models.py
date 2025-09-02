@@ -26,41 +26,24 @@ class Gaid(Base):
     __tablename__ = 'gaid'
 
     id: Mapped[int] = mapped_column(primary_key=True)
-<<<<<<< HEAD
-    namefail = mapped_column(String(70))
-    photo = mapped_column(String(300))
-    descriptiongaid = mapped_column(String(300))
-    fail = mapped_column(String(300))
-    pricecardgaid = mapped_column(Integer())
-    pricestargaid = mapped_column(Integer())
-=======
     name_fail_gaid = mapped_column(String(70))
     photo_gaid = mapped_column(String(300))
     description_gaid = mapped_column(String(300))
     fail_gaid = mapped_column(String(300))
     price_card_gaid = mapped_column(Integer())
     price_star_gaid = mapped_column(Integer())
->>>>>>> upgrade/main
 
 
 class Kurs(Base):
     __tablename__ = 'kurs'
 
     id: Mapped[int] = mapped_column(primary_key=True) 
-<<<<<<< HEAD
-    nameurl = mapped_column(String(70))
-    descriptionkurs = mapped_column(String(300))
-    url = mapped_column(String(300))
-    pricecardkurs = mapped_column(Integer())
-    pricestarkurs = mapped_column(Integer())
-=======
     name_fail_kurs = mapped_column(String(70))
     photo_kurs = mapped_column(String(300))
     description_kurs = mapped_column(String(300))
     fail_kurs = mapped_column(String(300))
     price_card_kurs = mapped_column(Integer())
     price_star_kurs = mapped_column(Integer())
->>>>>>> upgrade/main
 
 
 async def async_main():

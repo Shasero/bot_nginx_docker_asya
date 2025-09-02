@@ -1,8 +1,5 @@
 from database.models import async_session
 from database.models import User, Gaid, Kurs
-<<<<<<< HEAD
-from sqlalchemy import select, text, update
-=======
 from sqlalchemy import select, text
 import logging
 
@@ -16,7 +13,6 @@ logging.basicConfig(
     ]
 )
 logger = logging.getLogger(__name__)
->>>>>>> upgrade/main
 
 
 async def set_user(tg_id, tg_name):
@@ -39,32 +35,6 @@ async def set_active(tg_id, active):
         newstate = newstate.bindparams(tg_id=tg_id, active=active)
         await session.execute(newstate)
         await session.commit()
-<<<<<<< HEAD
-    
-
-# async def select_gaidid():
-#     async with async_session() as session:
-#         return await session.scalar(select(User.gaidid))
-    
-
-# async def updateinfogaidid(tg_id, user_gaids):
-#     async with async_session() as session:
-#         stmt = text("UPDATE users SET gaidid=:gaidid WHERE tg_id=:tg_id")
-#         stmt = stmt.bindparams(tg_id=tg_id, gaidid=user_gaids)
-#         await session.execute(stmt)
-#         await session.commit()
-
-
-async def addgaid(namefail, photo, descriptiongaid, fail, pricecardgaid, pricestargaid):
-    async with async_session() as session:
-        session.add(Gaid(namefail=namefail, photo=photo, descriptiongaid=descriptiongaid, fail=fail, pricecardgaid=pricecardgaid, pricestargaid=pricestargaid))
-        await session.commit()
-
-    
-async def addkurs(nameurl, descriptionkurs, url, pricecardkurs, pricestarkurs):
-    async with async_session() as session:
-        session.add(Kurs(nameurl=nameurl, url=url, descriptionkurs=descriptionkurs, pricecardkurs=pricecardkurs, pricestarkurs=pricestarkurs))
-=======
 
 
 async def add_gaid(name_fail_gaid, photo_gaid, description_gaid, fail_gaid, price_card_gaid, price_star_gaid):
@@ -76,7 +46,6 @@ async def add_gaid(name_fail_gaid, photo_gaid, description_gaid, fail_gaid, pric
 async def add_kurs(name_fail_kurs, photo_kurs, description_kurs, fail_kurs, price_card_kurs, price_star_kurs):
     async with async_session() as session:
         session.add(Kurs(name_fail_kurs=name_fail_kurs, photo_kurs=photo_kurs, description_kurs=description_kurs, fail_kurs=fail_kurs, price_card_kurs=price_card_kurs, price_star_kurs=price_star_kurs))
->>>>>>> upgrade/main
         await session.commit()
 
 
@@ -90,12 +59,6 @@ async def select_kurs():
         return await session.scalars(select(Kurs))
     
 
-<<<<<<< HEAD
-async def get_gaid(getgaid):
-    async with async_session() as session:
-        result = await session.scalars(select(Gaid).where(Gaid.namefail == getgaid))
-        return result
-=======
 async def get_gaid(selection_id):
     async with async_session() as session:
         result = await session.scalars(select(Gaid).where(Gaid.name_fail_gaid == selection_id))
@@ -106,7 +69,6 @@ async def get_kurs(selection_id):
     async with async_session() as session:
         result = await session.scalars(select(Kurs).where(Kurs.name_fail_kurs == selection_id))
         return result.all()
->>>>>>> upgrade/main
     
 
 async def proverka_gaids():
@@ -114,43 +76,22 @@ async def proverka_gaids():
         return await session.scalar(select(Gaid.id))
     
 
-<<<<<<< HEAD
-async def get_kurs(selectkurs):
-    async with async_session() as session:
-        result = await session.scalars(select(Kurs).where(Kurs.nameurl == selectkurs))
-        return result
-    
-
-=======
->>>>>>> upgrade/main
 async def proverka_kurss():
     async with async_session() as session:
         return await session.scalar(select(Kurs.id))
     
 
-<<<<<<< HEAD
-async def droptablegaid(delitintgaid):
-    async with async_session() as session:
-        namegaid = await session.scalars(select(Gaid).where(Gaid.id == delitintgaid))
-=======
 async def drop_table_gaid(selection_id):
     async with async_session() as session:
         namegaid = await session.scalars(select(Gaid).where(Gaid.name_fail_gaid == selection_id))
->>>>>>> upgrade/main
         for gaid in namegaid:
             await session.delete(gaid)
         await session.commit()
 
 
-<<<<<<< HEAD
-async def droptablekurs(delitintkurs):
-    async with async_session() as session:
-        namekurs = await session.scalars(select(Kurs).where(Kurs.id == delitintkurs))
-=======
 async def drop_table_kurs(selection_id):
     async with async_session() as session:
         namekurs = await session.scalars(select(Kurs).where(Kurs.name_fail_kurs == selection_id))
->>>>>>> upgrade/main
         for kurs in namekurs:
             await session.delete(kurs)
         await session.commit()

@@ -1,9 +1,5 @@
 from aiogram import F, Router, Bot
-<<<<<<< HEAD
-from aiogram.types import CallbackQuery, Message, InputMediaPhoto, InputMediaVideo, InputMediaDocument
-=======
 from aiogram.types import CallbackQuery, Message
->>>>>>> upgrade/main
 from dotenv import load_dotenv
 from aiogram.fsm.state import StatesGroup, State
 from aiogram.fsm.context import FSMContext
@@ -149,53 +145,4 @@ async def get_custom_message(message: Message, state: FSMContext, bot: Bot):
     else:
         await bot.send_message(message.from_user.id, text=f'Не успешная рассылка. Не удалось отправить {failure_count} пользователям.')
 
-<<<<<<< HEAD
     await state.clear()
-
-
-
-# from aiogram import F, Router, Bot
-# from aiogram.types import CallbackQuery, Message
-# from dotenv import load_dotenv
-# from aiogram.fsm.state import StatesGroup, State
-# from aiogram.fsm.context import FSMContext
-
-# import database.requests as rq
-
-# router = Router()
-
-# load_dotenv()
-
-
-# class Custom_message(StatesGroup):
-#     msg_custom = State()
-
-
-# @router.callback_query(F.data == 'custom_message')
-# async def function_custom_message(callback: CallbackQuery, state: FSMContext):
-#     await callback.answer('')
-#     await state.set_state(Custom_message.msg_custom)
-#     await callback.message.answer(text='Введите ваше сообщение:')
-
-
-# @router.message(Custom_message.msg_custom)
-# async def get_custom_message(message: Message, state: FSMContext, bot: Bot):
-#     await state.update_data(msg_custom=message.text)
-#     data = await state.get_data()
-#     custom = data.get('msg_custom')
-#     users = await rq.get_users()
-#     for user in users:
-#         try:
-#             custom_send = await bot.send_message(chat_id=user.tg_id, text=custom)
-#             if int(user.active != 1):
-#                 await rq.set_active(user.tg_id, 1)
-#         except:
-#             await rq.set_active(user.tg_id, 0)
-#     if custom_send:
-#         await bot.send_message(message.from_user.id, text='Успешная расcылка')
-#     else:
-#         await bot.send_message(message.from_user.id, text='Не успешная рассылка')
-#     await state.clear()
-=======
-    await state.clear()
->>>>>>> upgrade/main
