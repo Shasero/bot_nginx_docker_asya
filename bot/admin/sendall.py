@@ -20,7 +20,7 @@ intadmin_id2 = int(admin_id2)
 
 
 @router.callback_query(F.data.startswith('keyboardrassilka'))
-async def rassilka(callback: CallbackQuery, bot: Bot):
+async def rassilka(callback: CallbackQuery):
     await callback.answer()
     await callback.message.edit_reply_markup(reply_markup=None)
     await callback.message.answer(text='Выберите что хотите отправить:', reply_markup=kb.list)

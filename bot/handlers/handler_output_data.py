@@ -248,6 +248,8 @@ class OutputDataHandler:
                 document=file_field,
                 caption=f"{'Гайд' if self.data_type == 'gaid' else 'Курс'}: {getattr(item, f'name_fail_{self.data_type}')}"
             )
+        await state.clear()    
+        logger.info(f"Состояние очищено после успешной оплаты для пользователя {message.from_user.id}")
         try:
             await bot.refund_star_payment(
                 message.from_user.id,
@@ -287,6 +289,7 @@ class OutputDataHandler:
         
         if message.text and message.text.lower() == "стоп":
             await state.clear()
+            logger.info(f"Пользователь {message.from_user.id} отменил оплату")
             await message.answer("Процесс оплаты отменен.")
             return
             
@@ -343,6 +346,7 @@ class OutputDataHandler:
             await state.set_state(CardPayStates.successful_photo_gaid)
         else:
             await state.set_state(CardPayStates.successful_photo_kurs)
+
 
 # Создаем экземпляры обработчиков
 gaid_handler = OutputDataHandler('gaid')
@@ -596,3 +600,16 @@ async def UnConfirmanswernokurs(callback: CallbackQuery, bot: Bot, state: FSMCon
 @router.message()
 async def log_all_messages(message: Message):
     logger.debug(f"Необработанное сообщение: {message.text}")
+
+
+@router.message(Command(commands=['gaid', 'kurs']))
+async def cancel_any_state(message: Message, state: FSMContext):
+    """Сбрасывает любое состояние при получении основных команд"""
+    current_state = await state.get_state()
+    if current_state:
+        await state.clear()
+        logger.info(f"Состояние сброшено для пользователя {message.from_user.id} при команде {message.text}")
+    if message.text == '/gaid':
+        await gaid_start(message, Bot.get_current())
+    elif message.text == '/kurs':
+        await kurs_start(message, Bot.get_current())

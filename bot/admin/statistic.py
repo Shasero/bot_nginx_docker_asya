@@ -5,8 +5,10 @@ import json
 
 router = Router()
 
-STAT_DATA_JSON = "stat_data.json"
-STAT_DATA_TXT = "stat_data.txt"
+GAID_DATA_JSON = "gaid_data.json"
+KURS_DATA_JSON = "kurs_data.json"
+GAID_DATA_TXT = "gaid_data.txt"
+KURS_DATA_TXT = "kurs_data.txt"
 
 
 async def convert_json_to_txt(json_file, txt_file):
@@ -40,14 +42,21 @@ async def statistica(callback: CallbackQuery, bot: Bot):
         await callback.message.answer("Отправляю файлы статистики...")
 
         # Convert JSON to TXT
-        gaid_converted = await convert_json_to_txt(STAT_DATA_JSON, STAT_DATA_TXT)
+        gaid_converted = await convert_json_to_txt(GAID_DATA_JSON, GAID_DATA_TXT)
+        kurs_converted = await convert_json_to_txt(KURS_DATA_JSON, KURS_DATA_TXT)
 
         try:
-            if gaid_converted and os.path.exists(STAT_DATA_TXT):
-                gaid_data_file = FSInputFile(STAT_DATA_TXT)
+            if gaid_converted and os.path.exists(GAID_DATA_TXT):
+                gaid_data_file = FSInputFile(GAID_DATA_TXT)
                 await bot.send_document(chat_id=chat_id, document=gaid_data_file)
             else:
-                await callback.message.answer( f"Файл {STAT_DATA_JSON} не найден или не удалось его преобразовать.")
+                await callback.message.answer( f"Файл {GAID_DATA_JSON} не найден или не удалось его преобразовать.")
+
+            if kurs_converted and os.path.exists(KURS_DATA_TXT):
+                kurs_date_file = FSInputFile(KURS_DATA_TXT)
+                await bot.send_document(chat_id=chat_id, document=kurs_date_file)
+            else:
+                await callback.message.answer(f"Файл {KURS_DATA_JSON} не найден или не удалось его преобразовать.")
         except Exception as e:
             await callback.message.answer(f"Произошла ошибка при отправке файлов: {e}")
     except Exception as e:
