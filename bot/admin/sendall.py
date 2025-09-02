@@ -43,12 +43,8 @@ async def kurssendall(callback: CallbackQuery, bot: Bot):
     for kurs in kurssel:
         for user in users:
             try:
-<<<<<<< HEAD
-                await bot.send_message(chat_id=user.tg_id, text=f'{kurs.nameurl}\n{kurs.url}')
-=======
                 await bot.send_photo(chat_id=user.tg_id, photo=kurs.photo_kurs, caption=kurs.description_kurs)
                 await bot.send_document(chat_id=user.tg_id, document=kurs.fail_kurs, caption=kurs.name_fail_kurs)
->>>>>>> upgrade/main
                 if int(user.active != 1):
                     await rq.set_active(user.tg_id, 1)
                 success_count += 1
@@ -84,12 +80,8 @@ async def gaidsendall(callback: CallbackQuery, bot: Bot):
     for gaid in gaidsel:
         for user in users:
             try:
-<<<<<<< HEAD
-                await bot.send_document(chat_id=user.tg_id, document=gaid.fail, caption=gaid.namefail)
-=======
                 await bot.send_photo(chat_id=user.tg_id, photo=gaid.photo_gaid, caption=gaid.description_gaid)
                 await bot.send_document(chat_id=user.tg_id, document=gaid.fail_gaid, caption=gaid.name_fail_gaid)
->>>>>>> upgrade/main
                 if int(user.active != 1):
                     await rq.set_active(user.tg_id, 1)
                 success_count += 1
