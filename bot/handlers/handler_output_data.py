@@ -41,7 +41,7 @@ def setup_logger():
     os.makedirs('logs', exist_ok=True)
     
     file_handler = RotatingFileHandler(
-        'logs/output_handler.log',
+        'logs/handler_output_data.log',
         maxBytes=10*1024*1024,
         backupCount=3,
         encoding='utf-8'
@@ -248,8 +248,10 @@ class OutputDataHandler:
                 document=file_field,
                 caption=f"{'Гайд' if self.data_type == 'gaid' else 'Курс'}: {getattr(item, f'name_fail_{self.data_type}')}"
             )
+
         await state.clear()    
         logger.info(f"Состояние очищено после успешной оплаты для пользователя {message.from_user.id}")
+
         try:
             await bot.refund_star_payment(
                 message.from_user.id,
@@ -274,9 +276,11 @@ class OutputDataHandler:
             await state.set_state(CardPayStates.successful_photo_gaid)
         else:
             await state.set_state(CardPayStates.successful_photo_kurs)
+
+        data_name = "гайд" if self.data_type == "gaid" else "курс"    
         
         await callback.message.answer(
-            f'Переведите на этот номер телефона сумму указанную в описании {self.data_type}а {phone}'
+            f'Переведите на этот номер телефона сумму указанную в описании {data_name}а {phone}'
         )
         await callback.message.answer(
             'Прикрепите чек🧾, для подтверждения оплаты!\n\n'
@@ -293,12 +297,15 @@ class OutputDataHandler:
             await message.answer("Процесс оплаты отменен.")
             return
             
-        if not message.photo:
-            await message.answer('Прикрепите скриншот вашего чека по оплате пожалуйста')
-            return
+        # if not message.photo:
+        #     await message.answer('Прикрепите скриншот вашего чека по оплате пожалуйста')
+        #     return
         
         # Получаем данные из состояния
+        current_state = await state.get_state()
         data = await state.get_data()
+        logger.info(f"Обработка платежной фотографии для {self.data_type}, состояние: {current_state}")
+        logger.info(f"Данные состояния: {data}")
         user_id = data.get('user_id')
         selection_id = data.get('selection_id')
         admin_id = data.get('admin_id')
@@ -306,8 +313,22 @@ class OutputDataHandler:
         logger.info(f"User ID: {user_id}, Selection ID: {selection_id}, Admin ID: {admin_id}")
         
         # Сохраняем фото
-        pay_photo_check = message.photo[-1].file_id
-        await state.update_data(pay_photo_check=pay_photo_check)
+        try:
+            if message.document: 
+                await message.answer("Пожалуйста, отправьте именно 📸 <b>скриншот</b> (как изображение), а не файл-документ.", parse_mode='HTML')
+                logger.warn("Получен файл-документ, вернул пользователю сообщение о просьбе прислать фото")
+                return
+            elif message.photo:
+                if message.photo[-1].file_size > 5 * 1024 * 1024:
+                    await message.answer("Изображение слишком большое. Пожалуйста, сделайте скриншот меньше или обрежьте его.")
+                    return
+                else:
+                    pay_photo_check = message.photo[-1].file_id
+                    await state.update_data(pay_photo_check=pay_photo_check)
+                    logger.info("Получено сжатое фото")
+        except (TypeError, IndexError):
+            await message.answer('Прикрепите скриншот вашего чека по оплате пожалуйста')
+            return
         
         await bot.send_message(chat_id=user_id, text='Ожидайте подтверждение вашей оплаты админом')
         
@@ -346,6 +367,7 @@ class OutputDataHandler:
             await state.set_state(CardPayStates.successful_photo_gaid)
         else:
             await state.set_state(CardPayStates.successful_photo_kurs)
+        
 
 
 # Создаем экземпляры обработчиков
@@ -354,7 +376,7 @@ kurs_handler = OutputDataHandler('kurs')
 
 # Регистрация обработчиков для гайдов
 @router.message(Command(commands='gaid'))
-# @log_user_action
+@log_user_action
 async def gaid_start(message: Message, bot: Bot):
     await gaid_handler.start(message, bot)
 
@@ -364,6 +386,7 @@ async def gaid_select(callback: CallbackQuery, state: FSMContext):
     await gaid_handler.select(callback, state)
 
 @router.callback_query(F.data.startswith('stars_gaid'))
+@log_user_action
 async def buy_gaid(callback: CallbackQuery, state: FSMContext):
     await gaid_handler.buy_with_stars(callback, state)
 
@@ -372,44 +395,54 @@ async def pre_checkout_query_gaid(event: PreCheckoutQuery) -> None:
     await event.answer(ok=True)
 
 @router.message(F.successful_payment.invoice_payload == 'gaid')
+@log_user_action
 async def successful_payment_gaid(message: Message, bot: Bot, state: FSMContext):
     await gaid_handler.successful_payment(message, bot, state)
 
 @router.callback_query(F.data.startswith('cards_gaid'))
+@log_user_action
 async def pay_photo_check_get_gaid(callback: CallbackQuery, state: FSMContext):
     await gaid_handler.pay_with_card(callback, state)
 
 @router.message(CardPayStates.successful_photo_gaid)
+@log_user_action
 async def successful_photo_gaid(message: Message, state: FSMContext, bot: Bot):
     await gaid_handler.process_payment_photo(message, state, bot)
 
 # Регистрация обработчиков для курсов
 @router.message(Command(commands='kurs'))
+@log_user_action
 async def kurs_start(message: Message, bot: Bot):
     await kurs_handler.start(message, bot)
 
 @router.callback_query(F.data.startswith('selectkurs_'))
+@log_user_action
 async def kurs_select(callback: CallbackQuery, state: FSMContext):
     await kurs_handler.select(callback, state)
 
 @router.callback_query(F.data.startswith('stars_kurs'))
+@log_user_action
 async def buy_kurs(callback: CallbackQuery, state: FSMContext):
     await kurs_handler.buy_with_stars(callback, state)
 
 @router.message(F.successful_payment.invoice_payload == 'kurs')
+@log_user_action
 async def successful_payment_kurs(message: Message, bot: Bot, state: FSMContext):
     await kurs_handler.successful_payment(message, bot, state)
 
 @router.callback_query(F.data.startswith('cards_kurs'))
+@log_user_action
 async def pay_photo_check_get_kurs(callback: CallbackQuery, state: FSMContext):
     await kurs_handler.pay_with_card(callback, state)
 
 @router.message(CardPayStates.successful_photo_kurs)
+@log_user_action
 async def successful_photo_kurs(message: Message, state: FSMContext, bot: Bot):
     await kurs_handler.process_payment_photo(message, state, bot)
 
 # Обработчики подтверждения оплаты (остаются без изменений)
 @router.callback_query(F.data.startswith('true_gaid'))
+@log_user_action
 async def Trueanswer(callback: CallbackQuery):
     await callback.answer()
     chekkeyboard = await callback.message.answer('Вы точно все внимательно проверили?', reply_markup=kb.confirmation_gaid)
@@ -417,6 +450,7 @@ async def Trueanswer(callback: CallbackQuery):
     await chekkeyboard.delete()
 
 @router.callback_query(F.data.startswith('false_gaid'))
+@log_user_action
 async def Falseanswer(callback: CallbackQuery):
     await callback.answer()
     chekkeyboard = await callback.message.answer('Вы точно все внимательно проверили?', reply_markup=kb.confirmation_false_gaid)
@@ -424,11 +458,14 @@ async def Falseanswer(callback: CallbackQuery):
     await chekkeyboard.delete()
 
 @router.callback_query(F.data.startswith('yes_false_gaid'))
+@log_user_action
 async def Confirmanswer(callback: CallbackQuery, bot: Bot, state: FSMContext):
     data = await state.get_data()
     admin_data = data.get('admin_message_data', {})
     client_id = admin_data.get('client_id')
     await callback.answer()
+    await state.clear()
+    logger.info(f"Состояние очищено перед сообщением пользователю о неккоректности платежа  для {client_id}")
     falsecheck = await callback.message.answer('Понял вас! Сообщаю о неккоректности платежа пользователю!')
     await bot.send_message(chat_id=client_id, text='Админ не подтвердил ваш платеж! Перепроверьте оплату!')
     await asyncio.sleep(900)
@@ -436,6 +473,7 @@ async def Confirmanswer(callback: CallbackQuery, bot: Bot, state: FSMContext):
 
 
 @router.callback_query(F.data.startswith('no_false_gaid'))
+@log_user_action
 async def UnConfirmanswer(callback: CallbackQuery, bot: Bot, state: FSMContext):
     data = await state.get_data()
     admin_data = data.get('admin_message_data', {})
@@ -465,6 +503,9 @@ async def ConfirmanswerYes(callback: CallbackQuery, bot: Bot, state: FSMContext)
         await callback.answer("Данные не найдены")
         return
         
+    await state.clear()
+    logger.info(f"Состояние очищено перед отправкой гайда для {client_id}")
+
     gaidsel = await rq.get_gaid(selection_id)
     await callback.answer()
     try:
@@ -485,6 +526,7 @@ async def ConfirmanswerYes(callback: CallbackQuery, bot: Bot, state: FSMContext)
 
 
 @router.callback_query(F.data.startswith('no_gaid'))
+@log_user_action
 async def UnConfirmanswerno(callback: CallbackQuery, bot: Bot, state: FSMContext):
     data = await state.get_data()
     admin_data = data.get('admin_message_data', {})
@@ -504,6 +546,7 @@ async def UnConfirmanswerno(callback: CallbackQuery, bot: Bot, state: FSMContext
 
 
 @router.callback_query(F.data.startswith('true_kurs'))
+@log_user_action
 async def Trueanswerkurs(callback: CallbackQuery):
     await callback.answer()
     chekkeyboardtrue = await callback.message.answer('Вы точно все внимательно проверили?', reply_markup=kb.confirmation_kurs)
@@ -512,6 +555,7 @@ async def Trueanswerkurs(callback: CallbackQuery):
 
 
 @router.callback_query(F.data.startswith('ok_kurs'))
+@log_user_action
 async def ConfirmanswerYeskurs(callback: CallbackQuery, bot: Bot, state: FSMContext):
     data = await state.get_data()
     admin_data = data.get('admin_message_data', {})
@@ -523,6 +567,8 @@ async def ConfirmanswerYeskurs(callback: CallbackQuery, bot: Bot, state: FSMCont
         return
     
     await callback.answer()
+    await state.clear()
+    logger.info(f"Состояние очищено перед отправкой курса для {client_id}")
     kurssel = await rq.get_kurs(selection_id)
     try:
         sendmessagek = await callback.message.answer('Отправляю курс счастливчику🥳')
@@ -540,8 +586,10 @@ async def ConfirmanswerYeskurs(callback: CallbackQuery, bot: Bot, state: FSMCont
     await asyncio.sleep(900)
     await sendmessagek.delete()
     await sendmessageerror.delete()
+    await state.clear()
 
 @router.callback_query(F.data.startswith('false_kurs'))
+@log_user_action
 async def Falseanswerkurs(callback: CallbackQuery):
     await callback.answer()
     chekkeyboardfalse = await callback.message.answer('Вы точно все внимательно проверили?', reply_markup=kb.confirmation_false_kurs)
@@ -549,11 +597,14 @@ async def Falseanswerkurs(callback: CallbackQuery):
     await chekkeyboardfalse.delete()
 
 @router.callback_query(F.data.startswith('yes_false_kurs'))
+@log_user_action
 async def Confirmanswerkurs(callback: CallbackQuery, bot: Bot, state: FSMContext):
     data = await state.get_data()
     admin_data = data.get('admin_message_data', {})
     client_id = admin_data.get('client_id')
     await callback.answer()
+    await state.clear()
+    logger.info(f"Состояние очищено перед сообщением пользователю о неккоректности платежа  для {client_id}")
     falsecheckyesfalse = await callback.message.answer('Понял вас! Сообщаю о неккоректности платежа пользователю!')
     await bot.send_message(chat_id=client_id, text='Админ не подтвердил ваш платеж! Перепроверьте оплату!')
     await asyncio.sleep(900)
@@ -561,6 +612,7 @@ async def Confirmanswerkurs(callback: CallbackQuery, bot: Bot, state: FSMContext
 
 
 @router.callback_query(F.data.startswith('no_false_kurs'))
+@log_user_action
 async def UnConfirmanswerkurs(callback: CallbackQuery, bot: Bot, state: FSMContext):
     data = await state.get_data()
     admin_data = data.get('admin_message_data', {})
@@ -580,6 +632,7 @@ async def UnConfirmanswerkurs(callback: CallbackQuery, bot: Bot, state: FSMConte
 
 
 @router.callback_query(F.data.startswith('no_kurs'))
+@log_user_action
 async def UnConfirmanswernokurs(callback: CallbackQuery, bot: Bot, state: FSMContext):
     data = await state.get_data()
     admin_data = data.get('admin_message_data', {})
@@ -598,18 +651,19 @@ async def UnConfirmanswernokurs(callback: CallbackQuery, bot: Bot, state: FSMCon
     await chekmessage.delete()
 
 @router.message()
+@log_user_action
 async def log_all_messages(message: Message):
     logger.debug(f"Необработанное сообщение: {message.text}")
 
 
-@router.message(Command(commands=['gaid', 'kurs']))
-async def cancel_any_state(message: Message, state: FSMContext):
-    """Сбрасывает любое состояние при получении основных команд"""
-    current_state = await state.get_state()
-    if current_state:
-        await state.clear()
-        logger.info(f"Состояние сброшено для пользователя {message.from_user.id} при команде {message.text}")
-    if message.text == '/gaid':
-        await gaid_start(message, Bot.get_current())
-    elif message.text == '/kurs':
-        await kurs_start(message, Bot.get_current())
+# @router.message(Command(commands=['gaid', 'kurs']))
+# async def cancel_any_state(message: Message, state: FSMContext):
+#     """Сбрасывает любое состояние при получении основных команд"""
+#     current_state = await state.get_state()
+#     if current_state:
+#         await state.clear()
+#         logger.info(f"Состояние сброшено для пользователя {message.from_user.id} при команде {message.text}")
+#     if message.text == '/gaid':
+#         await gaid_start(message, Bot.get_current())
+#     elif message.text == '/kurs':
+#         await kurs_start(message, Bot.get_current())
