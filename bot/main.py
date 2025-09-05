@@ -31,7 +31,7 @@ from handlers.handler_output_data import CardPayStates
 load_dotenv('./.env')
 
 
-IS_WEBHOOK = 0
+IS_WEBHOOK = 1
 
 token = os.getenv('TOKEN')
 NGINX_HOST = os.getenv('NGINX_HOST') 
