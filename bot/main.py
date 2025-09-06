@@ -17,7 +17,7 @@ from utils.commands import set_commands
 from admin.handlerauthadmin import authorization_start
 from admin.handler_add_data import add_gaid, add_gaid_name, add_gaid_photo, add_gaid_description, add_gaid_file, add_gaid_price_card, add_gaid_price_star, add_kurs
 from admin. handler_delit_data import start_on_delit_gaid, drop_gaid, start_on_delit_kurs, drop_kurs
-from handlers.handler_output_data import gaid_start, gaid_select, buy_gaid, successful_payment_gaid, pre_checkout_query_gaid, pay_photo_check_get_gaid, Trueanswer, Falseanswer, Confirmanswer, UnConfirmanswer, UnConfirmanswerno, ConfirmanswerYes, successful_photo_gaid, kurs_start, kurs_select, buy_kurs, successful_payment_kurs, pay_photo_check_get_kurs, successful_photo_kurs, Trueanswerkurs, Falseanswerkurs, Confirmanswerkurs, UnConfirmanswerkurs, ConfirmanswerYeskurs, UnConfirmanswernokurs
+from handlers.handler_output_data import gaid_start, gaid_select, buy_gaid, successful_payment_gaid, pre_checkout_query_gaid, pay_photo_check_get_gaid, Trueanswer, Falseanswer, Confirmanswer, UnConfirmanswer, UnConfirmanswerno, ConfirmanswerYes, successful_photo_gaid, kurs_start, kurs_select, buy_kurs, successful_payment_kurs, pay_photo_check_get_kurs, successful_photo_kurs, Trueanswerkurs, Falseanswerkurs, Confirmanswerkurs, UnConfirmanswerkurs, ConfirmanswerYeskurs, UnConfirmanswernokurs, cancel_any_state
 from admin.sendall import rassilka, kurs, kurssendall, gaids, gaidsendall
 from admin.custom_sendall import function_custom_message, get_custom_message
 from admin.statistic import statistica
@@ -143,7 +143,7 @@ dp.callback_query.register(kurs_select, F.data.startswith('selectkurs_'))
 dp.callback_query.register(buy_kurs, F.data.startswith('stars_kurs'))
 dp.message.register(successful_payment_kurs, F.successful_payment.invoice_payload == 'kurs')
 
-# dp.message.register(cancel_any_state, Command(commands=['gaid', 'kurs']))
+dp.message.register(cancel_any_state, Command(commands=['gaid', 'kurs']))
 
 dp.callback_query.register(start_on_delit_kurs, F.data.startswith('keyboard_delete_kurs'))
 dp.callback_query.register(drop_kurs, F.data.startswith('delitk_'))

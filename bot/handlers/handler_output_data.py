@@ -312,6 +312,8 @@ class OutputDataHandler:
         
         logger.info(f"User ID: {user_id}, Selection ID: {selection_id}, Admin ID: {admin_id}")
         
+        pay_photo_check = None
+
         # Сохраняем фото
         try:
             if message.document: 
@@ -326,6 +328,9 @@ class OutputDataHandler:
                     pay_photo_check = message.photo[-1].file_id
                     await state.update_data(pay_photo_check=pay_photo_check)
                     logger.info("Получено сжатое фото")
+            else:
+                await message.answer('Прикрепите скриншот вашего чека по оплате пожалуйста')
+                return
         except (TypeError, IndexError):
             await message.answer('Прикрепите скриншот вашего чека по оплате пожалуйста')
             return
@@ -656,14 +661,14 @@ async def log_all_messages(message: Message):
     logger.debug(f"Необработанное сообщение: {message.text}")
 
 
-# @router.message(Command(commands=['gaid', 'kurs']))
-# async def cancel_any_state(message: Message, state: FSMContext):
-#     """Сбрасывает любое состояние при получении основных команд"""
-#     current_state = await state.get_state()
-#     if current_state:
-#         await state.clear()
-#         logger.info(f"Состояние сброшено для пользователя {message.from_user.id} при команде {message.text}")
-#     if message.text == '/gaid':
-#         await gaid_start(message, Bot.get_current())
-#     elif message.text == '/kurs':
-#         await kurs_start(message, Bot.get_current())
+@router.message(Command(commands=['gaid', 'kurs']))
+async def cancel_any_state(message: Message, state: FSMContext):
+    """Сбрасывает любое состояние при получении основных команд"""
+    current_state = await state.get_state()
+    if current_state:
+        await state.clear()
+        logger.info(f"Состояние сброшено для пользователя {message.from_user.id} при команде {message.text}")
+    if message.text == '/gaid':
+        await gaid_start(message, Bot.get_current())
+    elif message.text == '/kurs':
+        await kurs_start(message, Bot.get_current())
